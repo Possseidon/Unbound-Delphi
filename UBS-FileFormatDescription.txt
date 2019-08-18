@@ -1,0 +1,4 @@
+The Unbound Game-Engine uses its own efficient and easy to implement way of storing binary data.
+
+This is done using the so called "ubs" file format. "ubs" stands for either UnBoundStorage or UnBoundSerialized (can't decide lol).
+

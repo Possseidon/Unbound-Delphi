@@ -1,0 +1,18 @@
+Unbound Todo List
+
+[ ] Unbound.InputManager
+    [ ] TInputManager
+
+[ ] Unbound.Game
+    [ ] TGame
+    [ ] TWorld.TChunk
+    [ ] TWorld.TGenerator
+    [ ] TPlayer
+
+[ ] Unbound.GameState
+    [ ] TGameState
+    [ ] TGameState.TTransition
+    
+[ ] Unbound.GLPrograms
+    (Contains Resources for all used Shaders)
+    
