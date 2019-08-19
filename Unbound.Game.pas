@@ -13,10 +13,9 @@ uses
 
 type
 
-  // Interfaces
+  // --- Interfaces ---
 
   IWorld = interface;
-  IGame = interface;
 
   IChunk = interface(ISerializable)
     function GetWorld: IWorld;
@@ -44,12 +43,27 @@ type
 
   end;
 
+  IWorldGenerator = interface;
+
+  IWorldFeature = interface(ISerializable)
+    function GetGenerator: IWorldGenerator;
+
+    property Generator: IWorldGenerator read GetGenerator;
+
+    procedure Apply(const AChunk: IChunk);
+
+  end;
+
   IWorldGenerator = interface(ISerializable)
-    function Copy: IWorldGenerator;
+    function GetFeatures: IReadonlyList<IWorldFeature>;
 
     procedure GenerateChunk(const AChunk: IChunk);
 
+    property Features: IReadonlyList<IWorldFeature> read GetFeatures;
+
   end;
+
+  IGame = interface;
 
   IWorld = interface(ISerializable)
     function GetGame: IGame;
@@ -66,7 +80,7 @@ type
     function GetWorlds: IReadonlyList<IWorld>;
 
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld: IWorld;
+    function AddWorld(AGenerator: IWorldGenerator): IWorld;
 
   end;
 
@@ -95,13 +109,55 @@ type
 
   end;
 
-  // Implementations
+  // --- Implementations ---
+
+  TWorldFeatureClass = class of TWorldFeature;
+
+  TWorldFeature = class(TInterfacedObject, IWorldFeature, ISerializable)
+  private
+    [Weak]
+    FGenerator: IWorldGenerator;
+
+    function GetGenerator: IWorldGenerator;
+
+  public
+    constructor Create(AGenerator: IWorldGenerator);
+    class function CreateTyped(AGenerator: IWorldGenerator; AUBSMap: TUBSMap): IWorldFeature;
+    class function GetName: string; virtual; abstract;
+
+    property Generator: IWorldGenerator read GetGenerator;
+
+    procedure Serialize(ASerializer: TSerializer);
+
+    procedure Apply(const AChunk: IChunk); virtual; abstract;
+
+  end;
+
+  TWorldGenerator = class(TInterfacedObject, IWorldGenerator, ISerializable)
+  private
+    FFeatures: IList<IWorldFeature>;
+
+    function CreateFeature(AUBSMap: TUBSMap): IWorldFeature;
+
+    function GetFeatures: IReadonlyList<IWorldFeature>;
+
+  public
+    constructor Create;
+
+    procedure GenerateChunk(const AChunk: IChunk);
+
+    property Features: IReadonlyList<IWorldFeature> read GetFeatures;
+
+    procedure Serialize(ASerializer: TSerializer);
+
+  end;
 
   TGame = class;
   TWorld = class;
 
   TChunk = class(TInterfacedObject, IChunk, ISerializable)
   private
+    [Weak]
     FWorld: IWorld;
     FOffset: TIntVector3;
     FSize: TIntVector3;
@@ -129,6 +185,7 @@ type
 
   TWorldLocation = class(TInterfacedObject, IWorldLocation, ISerializable)
   private
+    [Weak]
     FWorld: IWorld;
     FLocation: TLocation3;
 
@@ -157,9 +214,12 @@ type
 
   TWorld = class(TInterfacedObject, IWorld, ISerializable)
   private
+    [Weak]
     FGame: IGame;
     FGenerator: IWorldGenerator;
     FChunks: IMap<TIntVector3, IChunk>;
+
+    function CreateGenerator: IWorldGenerator;
 
     // IWorld
     function GetChunks: IReadonlyMap<TIntVector3, IChunk>;
@@ -167,7 +227,8 @@ type
     function GetGenerator: IWorldGenerator;
 
   public
-    constructor Create(const AGame: TGame);
+    constructor Create(const AGame: TGame); overload;
+    constructor Create(const AGame: TGame; const AGenerator: IWorldGenerator); overload;
 
     // IWorld
     property Game: IGame read GetGame;
@@ -251,7 +312,7 @@ type
 
     // IGame
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld: IWorld;
+    function AddWorld(AGenerator: IWorldGenerator): IWorld;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
@@ -259,6 +320,9 @@ type
   end;
 
 implementation
+
+uses
+  Unbound.WorldFeatures;
 
 { TChunk }
 
@@ -285,7 +349,7 @@ end;
 
 procedure TChunk.Serialize(ASerializer: TSerializer);
 begin
-
+  // TODO
 end;
 
 { TWorldLocation }
@@ -336,10 +400,21 @@ end;
 
 procedure TWorldLocation.Serialize(ASerializer: TSerializer);
 begin
-
+  // TODO
 end;
 
 { TWorld }
+
+constructor TWorld.Create(const AGame: TGame; const AGenerator: IWorldGenerator);
+begin
+  Create(AGame);
+  FGenerator := AGenerator;
+end;
+
+function TWorld.CreateGenerator: IWorldGenerator;
+begin
+  Result := TWorldGenerator.Create;
+end;
 
 function TWorld.GetChunks: IReadonlyMap<TIntVector3, IChunk>;
 begin
@@ -359,11 +434,12 @@ end;
 constructor TWorld.Create(const AGame: TGame);
 begin
   FGame := AGame;
+  FChunks := TMap<TIntVector3, IChunk>.Create;
 end;
 
 procedure TWorld.Serialize(ASerializer: TSerializer);
 begin
-
+  ASerializer.Define<IWorldGenerator>('Generator', FGenerator, CreateGenerator);
 end;
 
 { TEntity }
@@ -391,7 +467,7 @@ end;
 
 procedure TEntity.Serialize(ASerializer: TSerializer);
 begin
-
+  // TODO
 end;
 
 { TPhysicsEntity }
@@ -403,15 +479,13 @@ end;
 
 procedure TPhysicsEntity.SetVelocity(const Value: TVector3);
 begin
-  if Velocity = Value then
-    Exit;
   FVelocity := Value;
 end;
 
 procedure TPhysicsEntity.Serialize(ASerializer: TSerializer);
 begin
   inherited;
-
+  // TODO
 end;
 
 { TPlayer }
@@ -424,7 +498,7 @@ end;
 procedure TPlayer.Serialize(ASerializer: TSerializer);
 begin
   inherited;
-  // Define('Name', FName);
+  ASerializer.Define('Name', FName);
 end;
 
 { TGame }
@@ -439,9 +513,9 @@ begin
   Result := FWorlds.ReadonlyList;
 end;
 
-function TGame.AddWorld: IWorld;
+function TGame.AddWorld(AGenerator: IWorldGenerator): IWorld;
 begin
-  Result := CreateWorld;
+  Result := TWorld.Create(Self, AGenerator);
   FWorlds.Add(Result);
 end;
 
@@ -452,7 +526,65 @@ end;
 
 procedure TGame.Serialize(ASerializer: TSerializer);
 begin
-  ASerializer.DefineList<IWorld>('Worlds', FWorlds, CreateWorld);
+  ASerializer.Define<IWorld>('Worlds', FWorlds, CreateWorld);
+end;
+
+{ TWorldFeature }
+
+constructor TWorldFeature.Create(AGenerator: IWorldGenerator);
+begin
+  FGenerator := AGenerator;
+end;
+
+class function TWorldFeature.CreateTyped(AGenerator: IWorldGenerator; AUBSMap: TUBSMap): IWorldFeature;
+var
+  FeatureType: string;
+  FeatureClass: TWorldFeatureClass;
+begin
+  FeatureType := AUBSMap['FeatureType'].Cast<TUBSString>.Value;
+  for FeatureClass in WorldFeatureClasses do
+    if FeatureClass.GetName = FeatureType then
+      Exit(FeatureClass.Create(AGenerator));
+end;
+
+function TWorldFeature.GetGenerator: IWorldGenerator;
+begin
+  Result := FGenerator;
+end;
+
+procedure TWorldFeature.Serialize(ASerializer: TSerializer);
+begin
+  ASerializer.WriteOnly('FeatureType', GetName);
+end;
+
+{ TWorldGenerator }
+
+function TWorldGenerator.GetFeatures: IReadonlyList<IWorldFeature>;
+begin
+  Result := FFeatures.ReadonlyList;
+end;
+
+constructor TWorldGenerator.Create;
+begin
+  FFeatures := TList<IWorldFeature>.Create;
+end;
+
+function TWorldGenerator.CreateFeature(AUBSMap: TUBSMap): IWorldFeature;
+begin
+  Result := TWorldFeature.CreateTyped(Self, AUBSMap);
+end;
+
+procedure TWorldGenerator.GenerateChunk(const AChunk: IChunk);
+var
+  Feature: IWorldFeature;
+begin
+  for Feature in Features do
+    Feature.Apply(AChunk);
+end;
+
+procedure TWorldGenerator.Serialize(ASerializer: TSerializer);
+begin
+  ASerializer.Define<IWorldFeature>('Features', FFeatures, CreateFeature);
 end;
 
 end.

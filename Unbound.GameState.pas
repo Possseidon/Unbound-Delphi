@@ -3,6 +3,11 @@ unit Unbound.GameState;
 interface
 
 uses
+  System.Diagnostics,
+  System.SysUtils,
+
+  Pengine.IntMaths,
+
   Unbound.Game,
   Unbound.Game.Serialization;
 
@@ -28,12 +33,9 @@ implementation
 { TGameState }
 
 constructor TGameState.Create;
-var
-  UBSData: TUBSMap;
 begin
   FGame := TGame.Create;
-  FGame.AddWorld;
-  UBSData := TSerializer.Serialize(FGame);
+  FGame.AddWorld(TWorldGenerator.Create);
 end;
 
 end.
