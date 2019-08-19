@@ -2,6 +2,10 @@ unit Unbound.GameState;
 
 interface
 
+uses
+  Unbound.Game,
+  Unbound.Game.Serialization;
+
 type
 
   TGameState = class
@@ -12,12 +16,24 @@ type
     end;
 
   private
+    FGame: IGame;
 
   public
+    constructor Create;
 
   end;
 
 implementation
 
-end.
+{ TGameState }
 
+constructor TGameState.Create;
+var
+  UBSData: TUBSMap;
+begin
+  FGame := TGame.Create;
+  FGame.AddWorld;
+  UBSData := TSerializer.Serialize(FGame);
+end;
+
+end.
