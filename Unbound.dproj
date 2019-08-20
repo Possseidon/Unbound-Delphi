@@ -5,8 +5,8 @@
         <FrameworkType>VCL</FrameworkType>
         <MainSource>Unbound.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">DebugConsole</Config>
-        <Platform Condition="'$(Platform)'==''">Win64</Platform>
+        <Config Condition="'$(Config)'==''">Debug</Config>
+        <Platform Condition="'$(Platform)'==''">Win32</Platform>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
     </PropertyGroup>
@@ -160,12 +160,16 @@
         <DCCReference Include="Unbound.Main.pas">
             <Form>frmMain</Form>
         </DCCReference>
-        <DCCReference Include="Unbound.Game.pas"/>
-        <DCCReference Include="Unbound.GameState.pas"/>
+        <DCCReference Include="Game\Unbound.Game.pas"/>
+        <DCCReference Include="GameStates\Unbound.GameState.pas"/>
         <DCCReference Include="Unbound.InputManager.pas"/>
         <DCCReference Include="Unbound.Shaders.pas"/>
-        <DCCReference Include="Unbound.Game.Serialization.pas"/>
-        <DCCReference Include="Unbound.WorldFeatures.pas"/>
+        <DCCReference Include="Game\Unbound.Game.Serialization.pas"/>
+        <DCCReference Include="Game\Unbound.Game.WorldFeatures.pas"/>
+        <DCCReference Include="GameStates\Unbound.GameState.MainMenu.pas"/>
+        <DCCReference Include="GameStates\Unbound.GameState.Loading.pas"/>
+        <DCCReference Include="GameStates\Unbound.GameState.Playing.pas"/>
+        <DCCReference Include="Game\Unbound.Game.Renderer.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -197,6 +201,12 @@
             </Delphi.Personality>
             <Deployment Version="3">
                 <DeployFile LocalName="Win32\Debug\Unbound.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>Unbound.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win32\DebugConsole\Unbound.exe" Configuration="DebugConsole" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Unbound.exe</RemoteName>
                         <Overwrite>true</Overwrite>

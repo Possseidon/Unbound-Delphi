@@ -4,7 +4,6 @@ interface
 
 uses
   Pengine.GLForm,
-  Pengine.JSON,
 
   Unbound.GameState;
 
@@ -12,7 +11,7 @@ type
 
   TfrmMain = class(TGLForm)
   private
-    FGameState: TGameState;
+    FManager: TGameStateManager;
 
   public
     procedure Init; override;
@@ -27,16 +26,25 @@ implementation
 
 {$R *.dfm}
 
+uses
+  Unbound.GameState.Loading,
+  Unbound.GameState.MainMenu,
+  Unbound.GameState.Playing;
+
 { TfrmMain }
 
 procedure TfrmMain.Init;
 begin
-  FGameState := TGameState.Create;
+  FManager := TGameStateManager.Create(Game);
+  FManager.Add<TGameStateLoading>;
+  FManager.Add<TGameStateMainMenu>;
+  FManager.Add<TGameStatePlaying>;
+  FManager[TGameStatePlaying].Load;
 end;
 
 procedure TfrmMain.Finalize;
 begin
-  FGameState.Free;
+  FManager.Free;
 end;
 
 end.

@@ -1,4 +1,4 @@
-unit Unbound.WorldFeatures;
+unit Unbound.Game.WorldFeatures;
 
 interface
 
@@ -72,7 +72,7 @@ end;
 
 procedure TWorldFeatureHeightmap.CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3);
 begin
-  
+
 end;
 
 class function TWorldFeatureHeightmap.GetName: string;

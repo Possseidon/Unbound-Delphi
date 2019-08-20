@@ -4,12 +4,16 @@ uses
   Vcl.Forms,
   Pengine.DebugConsole,
   Unbound.Main in 'Unbound.Main.pas' {frmMain},
-  Unbound.Game in 'Unbound.Game.pas',
-  Unbound.GameState in 'Unbound.GameState.pas',
+  Unbound.Game in 'Game\Unbound.Game.pas',
+  Unbound.GameState in 'GameStates\Unbound.GameState.pas',
   Unbound.InputManager in 'Unbound.InputManager.pas',
   Unbound.Shaders in 'Unbound.Shaders.pas',
-  Unbound.Game.Serialization in 'Unbound.Game.Serialization.pas',
-  Unbound.WorldFeatures in 'Unbound.WorldFeatures.pas';
+  Unbound.Game.Serialization in 'Game\Unbound.Game.Serialization.pas',
+  Unbound.Game.WorldFeatures in 'Game\Unbound.Game.WorldFeatures.pas',
+  Unbound.GameState.MainMenu in 'GameStates\Unbound.GameState.MainMenu.pas',
+  Unbound.GameState.Loading in 'GameStates\Unbound.GameState.Loading.pas',
+  Unbound.GameState.Playing in 'GameStates\Unbound.GameState.Playing.pas',
+  Unbound.Game.Renderer in 'Game\Unbound.Game.Renderer.pas';
 
 {$R *.res}
 
