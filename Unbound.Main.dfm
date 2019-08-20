@@ -4,7 +4,7 @@ object frmMain: TfrmMain
   Caption = 'Unbound'
   ClientHeight = 720
   ClientWidth = 1280
-  Color = clBtnFace
+  Color = clBlack
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
