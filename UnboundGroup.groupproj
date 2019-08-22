@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{F33BE14E-E849-4BA8-A3AB-DE17B2A71A08}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="Unbound.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="UBSExplorer\UBSExplorer.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="Unbound">
+        <MSBuild Projects="Unbound.dproj"/>
+    </Target>
+    <Target Name="Unbound:Clean">
+        <MSBuild Projects="Unbound.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Unbound:Make">
+        <MSBuild Projects="Unbound.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="UBSExplorer">
+        <MSBuild Projects="UBSExplorer\UBSExplorer.dproj"/>
+    </Target>
+    <Target Name="UBSExplorer:Clean">
+        <MSBuild Projects="UBSExplorer\UBSExplorer.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="UBSExplorer:Make">
+        <MSBuild Projects="UBSExplorer\UBSExplorer.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="Unbound;UBSExplorer"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="Unbound:Clean;UBSExplorer:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="Unbound:Make;UBSExplorer:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

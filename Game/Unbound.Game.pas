@@ -145,9 +145,23 @@ type
 
   end;
 
+  // TODO: Split GamePack up, when necessary
+  /// <summary>Contains game resources and behaviors.</summary>
+  IGamePack = interface(ISerializable)
+    function GetGUID: TGUID;
+    function GetMaterials: IReadonlyList<ITerrainMaterial>;
+
+    property GUID: TGUID read GetGUID;
+    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
+
+  end;
+
   /// <summary>A game, consisting of multiple worlds and global game settings.</summary>
   IGame = interface(ISerializable)
+    function GetGamePacks: IReadonlyList<IGamePack>;
     function GetWorlds: IReadonlyList<IWorld>;
+
+    property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
 
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
     function AddWorld(AGenerator: IWorldGenerator): IWorld;
@@ -418,19 +432,45 @@ type
 
   end;
 
+  TGamePack = class(TInterfacedObject, IGamePack, ISerializable)
+  private
+    FGUID: TGUID;
+    FMaterials: IList<ITerrainMaterial>;
+
+    // IGamePack
+    function GetGUID: TGUID; virtual; abstract;
+    function GetMaterials: IReadonlyList<ITerrainMaterial>;
+
+  public
+    constructor Create; overload;
+    constructor Create(AGUID: TGUID); overload;
+
+    // IGamePack
+    property GUID: TGUID read GetGUID;
+    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer);
+
+  end;
+
   TGame = class(TInterfacedObject, IGame, ISerializable)
   private
+    FGamePacks: IList<IGamePack>;
     FWorlds: IList<IWorld>;
 
     function CreateWorld: IWorld;
 
     // IGame
+    function GetGamePacks: IReadonlyList<IGamePack>;
     function GetWorlds: IReadonlyList<IWorld>;
 
   public
     constructor Create;
 
     // IGame
+    property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
+
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
     function AddWorld(AGenerator: IWorldGenerator): IWorld;
 
@@ -789,11 +829,39 @@ begin
   ASerializer.Define('Name', FName);
 end;
 
+{ TGamePack }
+
+function TGamePack.GetMaterials: IReadonlyList<ITerrainMaterial>;
+begin
+  Result := FMaterials.ReadonlyList;
+end;
+
+constructor TGamePack.Create;
+begin
+  Create(TGUID.NewGuid);
+end;
+
+constructor TGamePack.Create(AGUID: TGUID);
+begin
+  FGUID := AGUID;
+  FMaterials := TList<ITerrainMaterial>.Create;
+end;
+
+procedure TGamePack.Serialize(ASerializer: TSerializer);
+begin
+  // ASerializer.Define('GUID', FGUID);
+end;
+
 { TGame }
 
 function TGame.CreateWorld: IWorld;
 begin
   Result := TWorld.Create(Self);
+end;
+
+function TGame.GetGamePacks: IReadonlyList<IGamePack>;
+begin
+  Result := FGamePacks.ReadonlyList;
 end;
 
 function TGame.GetWorlds: IReadonlyList<IWorld>;
