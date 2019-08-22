@@ -7,7 +7,8 @@ uses
   Vcl.Themes,
   Vcl.Styles,
   Vcl.ComCtrls,
-  Main in 'Main.pas' {Form1};
+  UBSExplorer.Main in 'UBSExplorer.Main.pas' {Form1},
+  UBSExplorer.Tab in 'UBSExplorer.Tab.pas' {frmTab: TFrame};
 
 {$R *.res}
 

@@ -42,7 +42,7 @@ object frmMain: TfrmMain
       ImageIndex = 0
     end
   end
-  object tcTabs: TTabControl
+  object pcTabs: TPageControl
     AlignWithMargins = True
     Left = 3
     Top = 31
@@ -50,25 +50,13 @@ object frmMain: TfrmMain
     Height = 332
     Align = alClient
     TabOrder = 2
-    object tvExplorer: TTreeView
-      AlignWithMargins = True
-      Left = 7
-      Top = 9
-      Width = 544
-      Height = 316
-      Align = alClient
-      Images = ilIcons
-      Indent = 19
-      TabOrder = 0
-      ExplicitLeft = 3
-      ExplicitTop = 31
-      ExplicitWidth = 558
-      ExplicitHeight = 332
-    end
+    OnChange = pcTabsChange
+    OnMouseDown = pcTabsMouseDown
+    ExplicitLeft = -2
   end
   object mmMain: TMainMenu
-    Left = 16
-    Top = 40
+    Left = 32
+    Top = 64
     object File1: TMenuItem
       Caption = 'File'
       object New1: TMenuItem
@@ -92,6 +80,9 @@ object frmMain: TfrmMain
       object Save1: TMenuItem
         Action = actSaveAs
       end
+      object Close1: TMenuItem
+        Action = actClose
+      end
       object N3: TMenuItem
         Caption = '-'
       end
@@ -107,22 +98,27 @@ object frmMain: TfrmMain
     end
   end
   object alMain: TActionList
-    Left = 64
-    Top = 40
+    Left = 80
+    Top = 64
     object actOpen: TAction
       Category = 'File'
       Caption = 'Open...'
+      ShortCut = 16463
       OnExecute = actOpenExecute
     end
     object actSave: TAction
       Category = 'File'
       Caption = 'Save'
+      ShortCut = 16467
       OnExecute = actSaveExecute
+      OnUpdate = actSaveUpdate
     end
     object actSaveAs: TAction
       Category = 'File'
       Caption = 'Save as...'
+      ShortCut = 24659
       OnExecute = actSaveAsExecute
+      OnUpdate = actSaveAsUpdate
     end
     object actExit: TAction
       Category = 'File'
@@ -132,23 +128,47 @@ object frmMain: TfrmMain
     object actNewMap: TAction
       Category = 'File'
       Caption = 'New Map'
+      ShortCut = 16462
       OnExecute = actNewMapExecute
     end
     object actNewList: TAction
       Category = 'File'
       Caption = 'New List'
+      ShortCut = 16461
       OnExecute = actNewListExecute
     end
     object actRegisterExtension: TAction
       Category = 'File'
       Caption = 'Register .ubs Extension'
       OnExecute = actRegisterExtensionExecute
+      OnUpdate = actRegisterExtensionUpdate
+    end
+    object actClose: TAction
+      Category = 'File'
+      Caption = 'Close'
+      SecondaryShortCuts.Strings = (
+        'Ctrl+F4')
+      ShortCut = 16471
+      OnExecute = actCloseExecute
+      OnUpdate = actCloseUpdate
     end
   end
   object ilIcons: TImageList
     ColorDepth = cd32Bit
     DrawingStyle = dsTransparent
-    Left = 112
-    Top = 40
+    Left = 128
+    Top = 64
+  end
+  object aeEvents: TApplicationEvents
+    OnActivate = aeEventsActivate
+    Left = 32
+    Top = 176
+  end
+  object dlgOpen: TOpenDialog
+    DefaultExt = '.ubs'
+    Filter = 'Unbound-Storage|*.ubs'
+    Options = [ofHideReadOnly, ofAllowMultiSelect, ofPathMustExist, ofFileMustExist, ofEnableSizing]
+    Left = 32
+    Top = 120
   end
 end

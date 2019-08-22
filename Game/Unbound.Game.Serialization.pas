@@ -71,7 +71,7 @@ type
   TUBSValue = class
   public const
 
-    BinaryFileSignature: array [0 ..  3] of Byte = (27, Ord('U'), Ord('B'), Ord('S'));
+    BinaryFileSignature: array [0 .. 3] of Byte = (27, Ord('U'), Ord('B'), Ord('S'));
 
   public type
 
@@ -138,6 +138,7 @@ type
     constructor Create; virtual;
 
     class function GetTag: TUBSTag; virtual; abstract;
+    class function GetTagName: string;
 
     procedure Save(AWriter: TBinaryWriter);
     class function Load(AReader: TBinaryReader): TUBSValue; static;
@@ -295,7 +296,6 @@ type
     Data: TBytes;
 
     class function GetTag: TUBSTag; override;
-
 
   end;
 
@@ -503,6 +503,43 @@ const
     // Color
     TUBSColorRGB,
     TUBSColorRGBA
+    );
+
+  UBSTagNames: array [TUBSTag] of string = (
+    // Nil type
+    'nil',
+
+    // Basic/Nested structures
+    'map',
+    'list',
+
+    // Common Primitives
+    'integer',
+    'single',
+    'boolean',
+    'string',
+    'bytes',
+
+    // Utility
+    'guid',
+
+    // Integer math
+    'ibounds1',
+    'ibounds2',
+    'ibounds3',
+    'ivec2',
+    'ivec3',
+
+    // Vector math
+    'bound1',
+    'bound2',
+    'bound3',
+    'vec2',
+    'vec3',
+
+    // Color
+    'rgb',
+    'rgba'
     );
 
 implementation
@@ -1360,9 +1397,13 @@ var
 begin
   Reader := TBinaryReader.Create(AFilename, TEncoding.UTF8);
   try
-    if Reader.ReadCardinal <> Cardinal(BinaryFileSignature) then
-      raise EUBSError.Create('Loading non-binary UBS file not supported.');
-    Result := Load(Reader);
+    try
+      if Reader.ReadCardinal <> Cardinal(BinaryFileSignature) then
+        raise EUBSError.Create('Loading non-binary UBS file not supported.');
+      Result := Load(Reader);
+    except
+      raise EUBSError.Create('Invalid UBS file.');
+    end;
   finally
     Reader.Free;
   end;
@@ -1378,6 +1419,11 @@ end;
 function TUBSValue.Formatter: IFormatter;
 begin
   Result := TFormatter.Create(Self);
+end;
+
+class function TUBSValue.GetTagName: string;
+begin
+  Result := UBSTagNames[GetTag];
 end;
 
 function TUBSValue.Format(AMode: TUBSFormatMode): string;

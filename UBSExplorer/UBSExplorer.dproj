@@ -104,9 +104,14 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="Main.pas">
+        <DCCReference Include="UBSExplorer.Main.pas">
             <Form>Form1</Form>
             <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="UBSExplorer.Tab.pas">
+            <Form>frmTab</Form>
+            <FormType>dfm</FormType>
+            <DesignClass>TFrame</DesignClass>
         </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
