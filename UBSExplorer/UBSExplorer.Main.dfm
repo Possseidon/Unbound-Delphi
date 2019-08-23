@@ -33,13 +33,14 @@ object frmMain: TfrmMain
     Height = 22
     AutoSize = True
     DrawingStyle = dsGradient
-    Images = ilIcons
+    Images = dmData.ilIcons
     TabOrder = 1
     object ToolButton1: TToolButton
       Left = 0
       Top = 0
       Caption = 'ToolButton1'
       ImageIndex = 0
+      OnClick = ToolButton1Click
     end
   end
   object pcTabs: TPageControl
@@ -152,22 +153,9 @@ object frmMain: TfrmMain
       OnUpdate = actCloseUpdate
     end
   end
-  object ilIcons: TImageList
-    ColorDepth = cd32Bit
-    DrawingStyle = dsTransparent
-    Left = 128
-    Top = 64
-  end
   object aeEvents: TApplicationEvents
     OnActivate = aeEventsActivate
-    Left = 32
-    Top = 176
-  end
-  object dlgOpen: TOpenDialog
-    DefaultExt = '.ubs'
-    Filter = 'Unbound-Storage (*.ubs)|*.ubs'
-    Options = [ofHideReadOnly, ofAllowMultiSelect, ofPathMustExist, ofFileMustExist, ofEnableSizing]
-    Left = 32
-    Top = 120
+    Left = 128
+    Top = 64
   end
 end

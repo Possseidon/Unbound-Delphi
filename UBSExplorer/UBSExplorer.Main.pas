@@ -28,7 +28,8 @@ uses
 
   Unbound.Game.Serialization,
 
-  UBSExplorer.Tab;
+  UBSExplorer.Tab,
+  UBSExplorer.DataModule;
 
 type
 
@@ -40,7 +41,6 @@ type
     alMain: TActionList;
     tbMain: TToolBar;
     ToolButton1: TToolButton;
-    ilIcons: TImageList;
     New1: TMenuItem;
     Open1: TMenuItem;
     Save1: TMenuItem;
@@ -60,7 +60,6 @@ type
     actRegisterExtension: TAction;
     pcTabs: TPageControl;
     aeEvents: TApplicationEvents;
-    dlgOpen: TOpenDialog;
     actClose: TAction;
     Close1: TMenuItem;
     procedure actCloseExecute(Sender: TObject);
@@ -81,7 +80,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure pcTabsChange(Sender: TObject);
     procedure pcTabsMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-
+    procedure ToolButton1Click(Sender: TObject);
   private
     procedure WMDropFiles(var Msg: TWMDropFiles); message WM_DROPFILES;
 
@@ -104,6 +103,8 @@ var
 implementation
 
 {$R *.dfm}
+
+uses UBSExplorer.EditValueDialog;
 
 
 procedure TfrmMain.actCloseExecute(Sender: TObject);
@@ -149,8 +150,8 @@ procedure TfrmMain.actOpenExecute(Sender: TObject);
 var
   Path: string;
 begin
-  if dlgOpen.Execute then
-    for Path in dlgOpen.Files do
+  if dmData.dlgOpen.Execute then
+    for Path in dmData.dlgOpen.Files do
       OpenTab(Path);
 end;
 
@@ -343,6 +344,11 @@ end;
 function TfrmMain.HasTab: Boolean;
 begin
   Result := pcTabs.ActivePage <> nil;
+end;
+
+procedure TfrmMain.ToolButton1Click(Sender: TObject);
+begin
+  dlgEditValue.ShowModal;
 end;
 
 end.

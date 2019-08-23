@@ -15,10 +15,4 @@ object frmTab: TfrmTab
     TabOrder = 0
     OnCreateNodeClass = tvExplorerCreateNodeClass
   end
-  object dlgSave: TSaveDialog
-    DefaultExt = '.ubs'
-    Filter = 'Unbound-Storage (*.ubs)|*.ubs'
-    Left = 32
-    Top = 16
-  end
 end

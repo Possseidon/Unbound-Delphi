@@ -17,7 +17,9 @@ uses
   Pengine.EventHandling,
   Pengine.ICollections,
 
-  Unbound.Game.Serialization;
+  Unbound.Game.Serialization,
+
+  UBSExplorer.DataModule;
 
 type
 
@@ -32,7 +34,6 @@ type
 
   TfrmTab = class(TFrame)
     tvExplorer: TTreeView;
-    dlgSave: TSaveDialog;
     procedure tvExplorerCreateNodeClass(Sender: TCustomTreeView; var NodeClass: TTreeNodeClass);
   private
     FFilename: string;
@@ -124,7 +125,6 @@ end;
 constructor TfrmTab.Create(AOwner: TComponent; AUBSTag: TUBSTag);
 begin
   inherited Create(AOwner);
-  FModified := True;
   FUBSValue := UBSClasses[AUBSTag].Create;
   UpdateTreeView;
 end;
@@ -170,10 +170,10 @@ end;
 
 function TfrmTab.SaveAs: Boolean;
 begin
-  Result := dlgSave.Execute;
+  Result := dmData.dlgSave.Execute;
   if not Result then
     Exit;
-  FFilename := dlgSave.FileName;
+  FFilename := dmData.dlgSave.FileName;
   FOnFilenameChange.Execute(Self);
   Result := Save;
 end;
