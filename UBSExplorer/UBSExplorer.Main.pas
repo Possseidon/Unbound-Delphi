@@ -103,7 +103,7 @@ var
 
 implementation
 
-{$R *.dfm}    
+{$R *.dfm}
 
 
 procedure TfrmMain.actCloseExecute(Sender: TObject);
@@ -156,25 +156,31 @@ end;
 
 procedure TfrmMain.actRegisterExtensionExecute(Sender: TObject);
 begin
-  if ExtensionExists('.ubs') then
-  begin
-    if UnregisterExtension('.ubs') then
-      MessageDlg('Unregistered .ubs extension.', mtInformation, [mbOK], 0)
-    else
-      MessageDlg('Could not unregister .ubs extension.', mtError, [mbOK], 0);
-  end
-  else
-  begin
-    if RegisterExtension('.ubs', 'UBS-Explorer', 'Unbound-Storage') then
-      MessageDlg('Registered .ubs extension.', mtInformation, [mbOK], 0)
-    else
-      MessageDlg('Could not register .ubs extension.', mtError, [mbOK], 0);
+  case ExtensionRegistered('.ubs') of
+    epMissing:
+      if RegisterExtension('.ubs', 'UBS-Explorer', 'Unbound-Storage') then
+        MessageDlg('Registered .ubs extension.', mtInformation, [mbOK], 0)
+      else
+        MessageDlg('Could not register .ubs extension.', mtError, [mbOK], 0);
+    epDifferentProgram:
+      if MessageDlg('.ubs is already bound to a different program. Continue?', mtConfirmation, mbYesNo, 0) = mrYes then
+      begin
+        if RegisterExtension('.ubs', 'UBS-Explorer', 'Unbound-Storage') then
+          MessageDlg('Registered .ubs extension.', mtInformation, [mbOK], 0)
+        else
+          MessageDlg('Could not register .ubs extension.', mtError, [mbOK], 0);
+      end;
+    epExists:
+      if UnregisterExtension('.ubs') then
+        MessageDlg('Unregistered .ubs extension.', mtInformation, [mbOK], 0)
+      else
+        MessageDlg('Could not unregister .ubs extension.', mtError, [mbOK], 0);
   end;
 end;
 
 procedure TfrmMain.actRegisterExtensionUpdate(Sender: TObject);
 begin
-  actRegisterExtension.Checked := ExtensionExists('.ubs');
+  actRegisterExtension.Checked := ExtensionRegistered('.ubs') = epExists;
 end;
 
 procedure TfrmMain.actSaveAsExecute(Sender: TObject);

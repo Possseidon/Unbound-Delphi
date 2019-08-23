@@ -52,7 +52,6 @@ object frmMain: TfrmMain
     TabOrder = 2
     OnChange = pcTabsChange
     OnMouseDown = pcTabsMouseDown
-    ExplicitLeft = -2
   end
   object mmMain: TMainMenu
     Left = 32
@@ -166,7 +165,7 @@ object frmMain: TfrmMain
   end
   object dlgOpen: TOpenDialog
     DefaultExt = '.ubs'
-    Filter = 'Unbound-Storage|*.ubs'
+    Filter = 'Unbound-Storage (*.ubs)|*.ubs'
     Options = [ofHideReadOnly, ofAllowMultiSelect, ofPathMustExist, ofFileMustExist, ofEnableSizing]
     Left = 32
     Top = 120
