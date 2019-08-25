@@ -10,6 +10,7 @@ object frmTab: TfrmTab
     Width = 320
     Height = 240
     Align = alClient
+    Images = dmData.ilIcons
     Indent = 19
     ReadOnly = True
     TabOrder = 0

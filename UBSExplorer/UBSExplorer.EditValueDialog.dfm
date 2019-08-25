@@ -31,14 +31,26 @@ object dlgEditValue: TdlgEditValue
       Images = dmData.ilIcons
       MultiLine = True
       TabOrder = 0
-      TabWidth = 24
+      TabWidth = 22
       object TabSheet1: TTabSheet
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
       object TabSheet2: TTabSheet
         ImageIndex = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
       object TabSheet3: TTabSheet
         ImageIndex = 2
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
       end
       object TabSheet4: TTabSheet
         ImageIndex = 3

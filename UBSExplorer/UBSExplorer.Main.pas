@@ -29,7 +29,8 @@ uses
   Unbound.Game.Serialization,
 
   UBSExplorer.Tab,
-  UBSExplorer.DataModule;
+  UBSExplorer.DataModule,
+  UBSExplorer.RegistrySettings;
 
 type
 
@@ -37,33 +38,71 @@ type
     mmMain: TMainMenu;
     sbMain: TStatusBar;
     File1: TMenuItem;
-    Exit1: TMenuItem;
+    miExit: TMenuItem;
     alMain: TActionList;
-    tbMain: TToolBar;
-    ToolButton1: TToolButton;
-    New1: TMenuItem;
-    Open1: TMenuItem;
-    Save1: TMenuItem;
-    N1: TMenuItem;
+    miNew: TMenuItem;
+    miOpen: TMenuItem;
+    miSaveAs: TMenuItem;
     N2: TMenuItem;
+    N1: TMenuItem;
     actOpen: TAction;
     actSave: TAction;
     actSaveAs: TAction;
     actExit: TAction;
-    Save2: TMenuItem;
+    miSave: TMenuItem;
     actNewMap: TAction;
     actNewList: TAction;
-    NewMap1: TMenuItem;
-    NewList1: TMenuItem;
-    N3: TMenuItem;
-    Extension1: TMenuItem;
+    miNewMap: TMenuItem;
+    miNewList: TMenuItem;
+    miRegsiterExtension: TMenuItem;
     actRegisterExtension: TAction;
     pcTabs: TPageControl;
     aeEvents: TApplicationEvents;
     actClose: TAction;
-    Close1: TMenuItem;
+    miClose: TMenuItem;
+    miEdit: TMenuItem;
+    miModifyValue: TMenuItem;
+    miAddValue: TMenuItem;
+    miDelete: TMenuItem;
+    N4: TMenuItem;
+    miAddMap: TMenuItem;
+    miAddList: TMenuItem;
+    N5: TMenuItem;
+    miFind: TMenuItem;
+    miHelp: TMenuItem;
+    miAbout: TMenuItem;
+    tbMain: TToolBar;
+    ToolButton2: TToolButton;
+    ToolButton3: TToolButton;
+    ToolButton1: TToolButton;
+    ToolButton4: TToolButton;
+    ToolButton5: TToolButton;
+    actAddMap: TAction;
+    actAbout: TAction;
+    actAddList: TAction;
+    actAddValue: TAction;
+    actModifyValue: TAction;
+    actDeleteValue: TAction;
+    actFind: TAction;
+    actFindNext: TAction;
+    miFindNext: TMenuItem;
+    actMoveUp: TAction;
+    actMoveDown: TAction;
+    N6: TMenuItem;
+    miMoveUp: TMenuItem;
+    miMoveDown: TMenuItem;
+    actSettings: TAction;
+    miSettings: TMenuItem;
+    miTools: TMenuItem;
+    N7: TMenuItem;
+    actDarkTheme: TAction;
+    miDarkTheme: TMenuItem;
+    actSaveAll: TAction;
+    miSaveAll: TMenuItem;
     procedure actCloseExecute(Sender: TObject);
     procedure actCloseUpdate(Sender: TObject);
+    procedure actDarkThemeExecute(Sender: TObject);
+    procedure actDarkThemeUpdate(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure actExitExecute(Sender: TObject);
@@ -72,6 +111,8 @@ type
     procedure actOpenExecute(Sender: TObject);
     procedure actRegisterExtensionExecute(Sender: TObject);
     procedure actRegisterExtensionUpdate(Sender: TObject);
+    procedure actSaveAllExecute(Sender: TObject);
+    procedure actSaveAllUpdate(Sender: TObject);
     procedure actSaveAsExecute(Sender: TObject);
     procedure actSaveAsUpdate(Sender: TObject);
     procedure actSaveExecute(Sender: TObject);
@@ -89,7 +130,10 @@ type
 
     function GetActiveTab: TfrmTab;
 
+    procedure UpdateCaption(const ATab: TfrmTab);
+
     procedure FilenameChange(const ATab: TfrmTab);
+    procedure ModifiedChange(const ATab: TfrmTab);
 
   public
     function HasTab: Boolean;
@@ -104,8 +148,8 @@ implementation
 
 {$R *.dfm}
 
-uses UBSExplorer.EditValueDialog;
 
+uses UBSExplorer.EditValueDialog;
 
 procedure TfrmMain.actCloseExecute(Sender: TObject);
 begin
@@ -115,6 +159,19 @@ end;
 procedure TfrmMain.actCloseUpdate(Sender: TObject);
 begin
   actClose.Enabled := HasTab;
+end;
+
+procedure TfrmMain.actDarkThemeExecute(Sender: TObject);
+begin
+  if Settings.Theme = 'Windows' then
+    Settings.Theme := 'Carbon'
+  else
+    Settings.Theme := 'Windows';
+end;
+
+procedure TfrmMain.actDarkThemeUpdate(Sender: TObject);
+begin
+  actDarkTheme.Checked := Settings.Theme = 'Carbon';
 end;
 
 procedure TfrmMain.FormCreate(Sender: TObject);
@@ -184,6 +241,34 @@ begin
   actRegisterExtension.Checked := ExtensionRegistered('.ubs') = epExists;
 end;
 
+procedure TfrmMain.actSaveAllExecute(Sender: TObject);
+var
+  I: Integer;
+  Tab: TfrmTab;
+begin
+  for I := 0 to pcTabs.PageCount - 1 do
+  begin
+    Tab := pcTabs.Pages[I].Controls[0] as TfrmTab;
+    if not Tab.Saved then
+      Tab.Save;
+  end;
+end;
+
+procedure TfrmMain.actSaveAllUpdate(Sender: TObject);
+var
+  ActionEnabled: Boolean;
+  I: Integer;
+begin
+  ActionEnabled := False;
+  for I := 0 to pcTabs.PageCount - 1 do
+  begin
+    if not (pcTabs.Pages[I].Controls[0] as TfrmTab).Saved then
+      ActionEnabled := True;
+  end;
+  actSaveAll.Enabled := ActionEnabled;
+  actSaveAll.Checked := HasTab and not ActionEnabled;
+end;
+
 procedure TfrmMain.actSaveAsExecute(Sender: TObject);
 begin
   ActiveTab.SaveAs;
@@ -204,8 +289,8 @@ end;
 
 procedure TfrmMain.actSaveUpdate(Sender: TObject);
 begin
-  actSave.Enabled := HasTab and ActiveTab.Modified;
-  actSave.Checked := HasTab and not ActiveTab.Modified;
+  actSave.Enabled := HasTab and not ActiveTab.Saved;
+  actSave.Checked := HasTab and ActiveTab.Saved;
 end;
 
 procedure TfrmMain.aeEventsActivate(Sender: TObject);
@@ -234,7 +319,7 @@ begin
   begin
     TabIndex := pcTabs.IndexOfTabAt(X, Y);
     if TabIndex <> -1 then
-      pcTabs.Pages[TabIndex].Free;
+      (pcTabs.Pages[TabIndex].Controls[0] as TfrmTab).TryClose;
   end;
 end;
 
@@ -303,7 +388,9 @@ begin
   TabFrame.Align := alClient;
   TabFrame.AlignWithMargins := True;
   TabFrame.OnFilenameChange.Add(FilenameChange);
-  FilenameChange(TabFrame);
+  TabFrame.OnModifiedChange.Add(ModifiedChange);
+  UpdateCaption(TabFrame);
+  NewTab.ImageIndex := Ord(TabFrame.UBSValue.GetTag);
   pcTabs.ActivePage := NewTab;
 end;
 
@@ -319,7 +406,8 @@ begin
   TabFrame.Align := alClient;
   TabFrame.AlignWithMargins := True;
   TabFrame.OnFilenameChange.Add(FilenameChange);
-  FilenameChange(TabFrame);
+  UpdateCaption(TabFrame);
+  NewTab.ImageIndex := Ord(AUBSTag);
   pcTabs.ActivePage := NewTab;
 end;
 
@@ -331,14 +419,8 @@ begin
 end;
 
 procedure TfrmMain.FilenameChange(const ATab: TfrmTab);
-var
-  TabSheet: TTabSheet;
 begin
-  TabSheet := ATab.Parent as TTabSheet;
-  if ATab.Filename.IsEmpty then
-    TabSheet.Caption := 'New'
-  else
-    TabSheet.Caption := ChangeFileExt(ExtractFileName(ATab.Filename), '');
+  UpdateCaption(ATab);
 end;
 
 function TfrmMain.HasTab: Boolean;
@@ -346,9 +428,27 @@ begin
   Result := pcTabs.ActivePage <> nil;
 end;
 
+procedure TfrmMain.ModifiedChange(const ATab: TfrmTab);
+begin
+  UpdateCaption(ATab);
+end;
+
 procedure TfrmMain.ToolButton1Click(Sender: TObject);
 begin
   dlgEditValue.ShowModal;
+end;
+
+procedure TfrmMain.UpdateCaption(const ATab: TfrmTab);
+var
+  TabSheet: TTabSheet;
+begin
+  TabSheet := ATab.Parent as TTabSheet;
+  if ATab.Filename.IsEmpty then
+    TabSheet.Caption := 'new'
+  else
+    TabSheet.Caption := ChangeFileExt(ExtractFileName(ATab.Filename), '');
+  if ATab.Modified then
+    TabSheet.Caption := TabSheet.Caption + '*';
 end;
 
 end.

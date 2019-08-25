@@ -40,10 +40,15 @@ type
     FFileTimestamp: TDateTime;
     FUBSValue: TUBSValue;
     FModified: Boolean;
+    FSaved: Boolean;
     FOnFilenameChange: TEvent<TfrmTab>;
+    FOnModifiedChange: TEvent<TfrmTab>;
 
     procedure AddUBSValueToTreeView(AParent: TUBSTreeNode; AUBSValue: TUBSValue);
     function GetOnFilenameChange: TEvent<TfrmTab>.TAccess;
+
+    procedure Modify;
+    function GetOnModifiedChange: TEvent<TfrmTab>.TAccess;
 
   public
     constructor Create(AOwner: TComponent; AUBSTag: TUBSTag); reintroduce; overload;
@@ -53,6 +58,7 @@ type
     property Filename: string read FFilename;
     property UBSValue: TUBSValue read FUBSValue;
     property Modified: Boolean read FModified;
+    property Saved: Boolean read FSaved;
 
     procedure UpdateTreeView;
 
@@ -65,6 +71,7 @@ type
     function TryClose: Boolean;
 
     property OnFilenameChange: TEvent<TfrmTab>.TAccess read GetOnFilenameChange;
+    property OnModifiedChange: TEvent<TfrmTab>.TAccess read GetOnModifiedChange;
 
   end;
 
@@ -89,14 +96,17 @@ begin
           case Pair.Value.GetTag of
             ubsMap, ubsList:
               begin
-                Node := tvExplorer.Items.AddChild(AParent, Format('%s: %s', [Pair.Key, Pair.Value.GetTagName]))
-                  as TUBSTreeNode;
+                Node := tvExplorer.Items.AddChild(AParent,
+                  Format('%s: %s', [Pair.Key, Pair.Value.GetTagName])) as TUBSTreeNode;
                 Node.UBSValue := Pair.Value;
                 AddUBSValueToTreeView(Node, Pair.Value);
               end
           else
-            tvExplorer.Items.AddChildObject(AParent, Format('%s: %s', [Pair.Key, Pair.Value.ToString]), Pair.Value);
+            Node := tvExplorer.Items.AddChildObject(AParent,
+              Format('%s: %s', [Pair.Key, Pair.Value.ToString]), Pair.Value) as TUBSTreeNode;
           end;
+          Node.ImageIndex := Ord(Pair.Value.GetTag);
+          Node.SelectedIndex := Node.ImageIndex;
         end;
       end;
     ubsList:
@@ -107,18 +117,23 @@ begin
           case Value.GetTag of
             ubsMap, ubsList:
               begin
-                Node := tvExplorer.Items.AddChildObject(AParent, Format('[%d] %s', [I, Value.GetTagName]), Value)
-                  as TUBSTreeNode;
+                Node := tvExplorer.Items.AddChildObject(AParent,
+                  Format('[%d] %s', [I, Value.GetTagName]), Value) as TUBSTreeNode;
                 Node.UBSValue := Value;
                 AddUBSValueToTreeView(Node, Value);
               end
           else
-            tvExplorer.Items.AddChildObject(AParent, Format('[%d] %s', [I, Value.ToString]), Value);
+            Node := tvExplorer.Items.AddChildObject(AParent,
+              Format('[%d] %s', [I, Value.ToString]), Value) as TUBSTreeNode;
           end;
+          Node.ImageIndex := Ord(Value.GetTag);
+          Node.SelectedIndex := Node.ImageIndex;
         end;
       end
   else
-    tvExplorer.Items.AddChildObject(AParent, AUBSValue.ToString, AUBSValue);
+    Node := tvExplorer.Items.AddChildObject(AParent, AUBSValue.ToString, AUBSValue) as TUBSTreeNode;
+    Node.ImageIndex := Ord(AUBSValue.GetTag);
+    Node.SelectedIndex := Node.ImageIndex;
   end;
 end;
 
@@ -134,6 +149,7 @@ begin
   inherited Create(AOwner);
   if not TFile.Exists(AFilename) then
     raise Exception.Create('File not found.');
+  FSaved := True;
   FFilename := AFilename;
   FFileTimestamp := TFile.GetLastWriteTime(AFilename);
   FUBSValue := TUBSValue.LoadFromFile(AFilename);
@@ -166,10 +182,13 @@ begin
   UBSValue.SaveToFile(Filename);
   FFileTimestamp := TFile.GetLastWriteTime(Filename);
   FModified := False;
+  FOnModifiedChange.Execute(Self);
 end;
 
 function TfrmTab.SaveAs: Boolean;
 begin
+  (Parent as TTabSheet).PageControl.ActivePage := (Parent as TTabSheet);
+  dmData.dlgSave.FileName := Filename;
   Result := dmData.dlgSave.Execute;
   if not Result then
     Exit;
@@ -186,6 +205,17 @@ end;
 function TfrmTab.GetOnFilenameChange: TEvent<TfrmTab>.TAccess;
 begin
   Result := FOnFilenameChange.Access;
+end;
+
+function TfrmTab.GetOnModifiedChange: TEvent<TfrmTab>.TAccess;
+begin
+  Result := FOnModifiedChange.Access;
+end;
+
+procedure TfrmTab.Modify;
+begin
+  FModified := True;
+  FOnModifiedChange.Execute(Self);
 end;
 
 procedure TfrmTab.CheckFileChanged;
