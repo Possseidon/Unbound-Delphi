@@ -132,7 +132,10 @@ object frmMain: TfrmMain
         Caption = '-'
       end
       object miModifyValue: TMenuItem
-        Action = actModifyValue
+        Action = actEditValue
+      end
+      object actRenameValue1: TMenuItem
+        Action = actRenameValue
       end
       object miDelete: TMenuItem
         Action = actDeleteValue
@@ -260,13 +263,19 @@ object frmMain: TfrmMain
       ImageIndex = 7
       ShortCut = 16452
     end
-    object actModifyValue: TAction
+    object actEditValue: TAction
       Category = 'Edit'
-      Caption = 'Modify Value...'
+      Caption = 'Edit Value...'
       ImageIndex = 22
       SecondaryShortCuts.Strings = (
         'F2')
       ShortCut = 16453
+    end
+    object actRenameValue: TAction
+      Category = 'Edit'
+      Caption = 'Rename Value'
+      ImageIndex = 22
+      ShortCut = 16466
     end
     object actDeleteValue: TAction
       Category = 'Edit'

@@ -3,6 +3,8 @@ unit Unbound.Shaders;
 interface
 
 uses
+  Pengine.Vector,
+  Pengine.Color,
   Pengine.GLProgram,
   Pengine.Skybox;
 
@@ -15,6 +17,13 @@ type
   end;
 
   TTerrainShader = class(TGLProgramResource)
+  public type
+
+    TData = packed record
+      Pos: TVector3;
+      Color: TColorRGB;
+    end;
+
   protected
     class function GetAttributeOrder: TGLProgram.TAttributeOrder; override;
     class procedure GetData(out AName: string; out AResource: Boolean); override;
@@ -52,7 +61,10 @@ end;
 
 class function TTerrainShader.GetAttributeOrder: TGLProgram.TAttributeOrder;
 begin
-  Result := [];
+  Result := [
+    'vpos',
+    'vcolor'
+    ];
 end;
 
 class procedure TTerrainShader.GetData(out AName: string; out AResource: Boolean);

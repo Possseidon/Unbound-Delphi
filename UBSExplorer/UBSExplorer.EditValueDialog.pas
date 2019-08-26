@@ -2,9 +2,12 @@
 
 interface
 
-uses Winapi.Windows,
+uses
   System.SysUtils,
   System.Classes,
+
+  Winapi.Windows,
+
   Vcl.Graphics,
   Vcl.Forms,
   Vcl.Controls,
@@ -12,6 +15,7 @@ uses Winapi.Windows,
   Vcl.Buttons,
   Vcl.ComCtrls,
   Vcl.ExtCtrls,
+
   UBSExplorer.DataModule;
 
 type

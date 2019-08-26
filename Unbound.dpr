@@ -1,5 +1,7 @@
 program Unbound;
 
+{$R *.dres}
+
 uses
   Vcl.Forms,
   Pengine.DebugConsole,

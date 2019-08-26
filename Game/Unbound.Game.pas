@@ -8,6 +8,8 @@ uses
   Pengine.IntMaths,
   Pengine.Vector,
   Pengine.ICollections,
+  Pengine.EventHandling,
+  Pengine.Color,
 
   Unbound.Game.Serialization;
 
@@ -50,6 +52,9 @@ type
 
   /// <summary>A material, which chunk terrain is made up of.</summary>
   ITerrainMaterial = interface(ISerializable)
+    function GetColor: TColorRGB;
+
+    property Color: TColorRGB read GetColor;
 
   end;
 
@@ -57,18 +62,21 @@ type
   ITerrain = interface(ISerializable)
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
     function GetSize: TIntVector3;
-    function GetMaterialIDAt(APos: TIntVector3): Integer;
-    procedure SetMaterialIDAt(APos: TIntVector3; const Value: Integer);
-    function GetMaterialAt(APos: TIntVector3): ITerrainMaterial;
-    procedure SetMaterialAt(APos: TIntVector3; const Value: ITerrainMaterial);
+    function GetMaterialIDAt(const APos: TIntVector3): Integer;
+    procedure SetMaterialIDAt(const APos: TIntVector3; const Value: Integer);
+    function GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
+    procedure SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
+    function GetOnChange: TEvent<ITerrain>.TAccess;
 
     property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
     function GetMaterialID(AMaterial: ITerrainMaterial): Integer;
     procedure RemoveUnusedMaterials;
 
     property Size: TIntVector3 read GetSize;
-    property MaterialIDAt[APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
-    property MaterialAt[APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
+    property MaterialIDAt[const APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
+    property MaterialAt[const APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
+
+    property OnChange: TEvent<ITerrain>.TAccess read GetOnChange;
 
   end;
 
@@ -149,9 +157,13 @@ type
   /// <summary>Contains game resources and behaviors.</summary>
   IGamePack = interface(ISerializable)
     function GetGUID: TGUID;
+    function GetWorldGenerators: IReadonlyList<IWorldGenerator>;
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
 
     property GUID: TGUID read GetGUID;
+
+    property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
+
     property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
 
   end;
@@ -162,9 +174,10 @@ type
     function GetWorlds: IReadonlyList<IWorld>;
 
     property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
+    procedure AddGamePack(const AGamePack: IGamePack);
 
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld(AGenerator: IWorldGenerator): IWorld;
+    function AddWorld(const AGenerator: IWorldGenerator): IWorld;
 
   end;
 
@@ -232,7 +245,14 @@ type
   TWorld = class;
 
   TTerrainMaterial = class(TInterfacedObject, ITerrainMaterial, ISerializable)
+  protected
+    // ITerrainMaterial
+    function GetColor: TColorRGB; virtual; abstract;
+
   public
+    // ITerrainMaterial
+    property Color: TColorRGB read GetColor;
+
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
@@ -247,16 +267,19 @@ type
     FSize: TIntVector3;
     FMaterials: IList<ITerrainMaterial>;
     FData: array of Word;
+    FOnChange: TEvent<ITerrain>;
 
     function PosToIndex(const APos: TIntVector3): Integer; inline;
+    procedure Change; inline;
 
     // ITerrain
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
     function GetSize: TIntVector3;
-    function GetMaterialIDAt(APos: TIntVector3): Integer;
-    procedure SetMaterialIDAt(APos: TIntVector3; const Value: Integer);
-    function GetMaterialAt(APos: TIntVector3): ITerrainMaterial;
-    procedure SetMaterialAt(APos: TIntVector3; const Value: ITerrainMaterial);
+    function GetMaterialIDAt(const APos: TIntVector3): Integer;
+    procedure SetMaterialIDAt(const APos: TIntVector3; const Value: Integer);
+    function GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
+    procedure SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
+    function GetOnChange: TEvent<ITerrain>.TAccess;
 
   public
     constructor Create(const ASize: TIntVector3);
@@ -267,8 +290,10 @@ type
     procedure RemoveUnusedMaterials;
 
     property Size: TIntVector3 read GetSize;
-    property MaterialIDAt[APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
-    property MaterialAt[APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
+    property MaterialIDAt[const APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
+    property MaterialAt[const APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
+
+    property OnChange: TEvent<ITerrain>.TAccess read GetOnChange;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
@@ -363,8 +388,8 @@ type
     function GetChunkSize: TIntVector3;
 
   public
-    constructor Create(const AGame: TGame); overload;
-    constructor Create(const AGame: TGame; const AGenerator: IWorldGenerator); overload;
+    constructor Create(const AGame: IGame); overload;
+    constructor Create(const AGame: IGame; const AGenerator: IWorldGenerator); overload;
 
     // IWorld
     property Game: IGame read GetGame;
@@ -439,6 +464,7 @@ type
 
     // IGamePack
     function GetGUID: TGUID; virtual; abstract;
+    function GetWorldGenerators: IReadonlyList<IWorldGenerator>; virtual; abstract;
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
 
   public
@@ -447,6 +473,9 @@ type
 
     // IGamePack
     property GUID: TGUID read GetGUID;
+
+    property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
+
     property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
 
     // ISerializable
@@ -470,9 +499,10 @@ type
 
     // IGame
     property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
+    procedure AddGamePack(const AGamePack: IGamePack);
 
     property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld(AGenerator: IWorldGenerator): IWorld;
+    function AddWorld(const AGenerator: IWorldGenerator): IWorld;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
@@ -566,24 +596,40 @@ begin
   Result := FSize;
 end;
 
-function TTerrain.GetMaterialIDAt(APos: TIntVector3): Integer;
+function TTerrain.GetMaterialIDAt(const APos: TIntVector3): Integer;
 begin
   Result := FData[PosToIndex(APos)];
 end;
 
-procedure TTerrain.SetMaterialIDAt(APos: TIntVector3; const Value: Integer);
+procedure TTerrain.SetMaterialIDAt(const APos: TIntVector3; const Value: Integer);
+var
+  Index: Integer;
 begin
-  FData[PosToIndex(APos)] := Value;
+  Index := PosToIndex(APos);
+  if FData[Index] = Value then
+    Exit;
+  FData[Index] := Value;
+  Change;
 end;
 
-function TTerrain.GetMaterialAt(APos: TIntVector3): ITerrainMaterial;
+function TTerrain.GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
 begin
   Result := FMaterials[MaterialIDAt[APos]];
 end;
 
-procedure TTerrain.SetMaterialAt(APos: TIntVector3; const Value: ITerrainMaterial);
+procedure TTerrain.SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
 begin
   MaterialIDAt[APos] := GetMaterialID(Value);
+end;
+
+function TTerrain.GetOnChange: TEvent<ITerrain>.TAccess;
+begin
+  Result := FOnChange.Access;
+end;
+
+procedure TTerrain.Change;
+begin
+  FOnChange.Execute(Self);
 end;
 
 constructor TTerrain.Create(const ASize: TIntVector3);
@@ -752,14 +798,14 @@ begin
   Result := FGenerator;
 end;
 
-constructor TWorld.Create(const AGame: TGame);
+constructor TWorld.Create(const AGame: IGame);
 begin
   FGame := AGame;
   FChunks := TMap<TIntVector3, IChunk>.Create;
   FChunkSize := DefaultChunkSize;
 end;
 
-constructor TWorld.Create(const AGame: TGame; const AGenerator: IWorldGenerator);
+constructor TWorld.Create(const AGame: IGame; const AGenerator: IWorldGenerator);
 begin
   Create(AGame);
   FGenerator := AGenerator;
@@ -871,10 +917,20 @@ end;
 
 constructor TGame.Create;
 begin
+  FGamePacks := TList<IGamePack>.Create;
   FWorlds := TList<IWorld>.Create;
 end;
 
-function TGame.AddWorld(AGenerator: IWorldGenerator): IWorld;
+procedure TGame.AddGamePack(const AGamePack: IGamePack);
+var
+  Generator: IWorldGenerator;
+begin
+  FGamePacks.Add(AGamePack);
+  for Generator in AGamePack.WorldGenerators do
+    FWorlds.Add(TWorld.Create(Self, Generator));
+end;
+
+function TGame.AddWorld(const AGenerator: IWorldGenerator): IWorld;
 begin
   Result := TWorld.Create(Self, AGenerator);
   FWorlds.Add(Result);

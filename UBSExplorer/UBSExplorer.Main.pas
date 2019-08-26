@@ -81,7 +81,7 @@ type
     actAbout: TAction;
     actAddList: TAction;
     actAddValue: TAction;
-    actModifyValue: TAction;
+    actEditValue: TAction;
     actDeleteValue: TAction;
     actFind: TAction;
     actFindNext: TAction;
@@ -99,6 +99,8 @@ type
     miDarkTheme: TMenuItem;
     actSaveAll: TAction;
     miSaveAll: TMenuItem;
+    actRenameValue: TAction;
+    actRenameValue1: TMenuItem;
     procedure actCloseExecute(Sender: TObject);
     procedure actCloseUpdate(Sender: TObject);
     procedure actDarkThemeExecute(Sender: TObject);

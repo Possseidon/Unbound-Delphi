@@ -14,8 +14,14 @@ type
 
     GUID: TGUID = '{B5423E56-8DFD-4D46-9510-5A4AD7F102DE}';
 
-  protected
-    function GetGUID: TGUID; override;
+  public type
+
+    TOverwoldGenerator = class(TWorldGenerator)
+
+    end;
+
+  private
+
 
   end;
 
