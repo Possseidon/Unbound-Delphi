@@ -454,10 +454,44 @@ type
     procedure Define(const AName: string; var AValue: Boolean); overload;
     procedure Define(const AName: string; var AValue: string); overload;
 
+    procedure Define(const AName: string; var AValue: TGUID); overload;
+
+    procedure Define(const AName: string; var AValue: TIntBounds1); overload;
+    procedure Define(const AName: string; var AValue: TIntBounds2); overload;
+    procedure Define(const AName: string; var AValue: TIntBounds3); overload;
+    procedure Define(const AName: string; var AValue: TIntVector2); overload;
+    procedure Define(const AName: string; var AValue: TIntVector3); overload;
+
+    procedure Define(const AName: string; var AValue: TBounds1); overload;
+    procedure Define(const AName: string; var AValue: TBounds2); overload;
+    procedure Define(const AName: string; var AValue: TBounds3); overload;
+    procedure Define(const AName: string; var AValue: TVector2); overload;
+    procedure Define(const AName: string; var AValue: TVector3); overload;
+
+    procedure Define(const AName: string; var AValue: TColorRGB); overload;
+    procedure Define(const AName: string; var AValue: TColorRGBA); overload;
+
     procedure WriteOnly(const AName: string; const AValue: Integer); overload;
     procedure WriteOnly(const AName: string; const AValue: Single); overload;
     procedure WriteOnly(const AName: string; const AValue: Boolean); overload;
     procedure WriteOnly(const AName: string; const AValue: string); overload;
+
+    procedure WriteOnly(const AName: string; var AValue: TGUID); overload;
+
+    procedure WriteOnly(const AName: string; var AValue: TIntBounds1); overload;
+    procedure WriteOnly(const AName: string; var AValue: TIntBounds2); overload;
+    procedure WriteOnly(const AName: string; var AValue: TIntBounds3); overload;
+    procedure WriteOnly(const AName: string; var AValue: TIntVector2); overload;
+    procedure WriteOnly(const AName: string; var AValue: TIntVector3); overload;
+
+    procedure WriteOnly(const AName: string; var AValue: TBounds1); overload;
+    procedure WriteOnly(const AName: string; var AValue: TBounds2); overload;
+    procedure WriteOnly(const AName: string; var AValue: TBounds3); overload;
+    procedure WriteOnly(const AName: string; var AValue: TVector2); overload;
+    procedure WriteOnly(const AName: string; var AValue: TVector3); overload;
+
+    procedure WriteOnly(const AName: string; var AValue: TColorRGB); overload;
+    procedure WriteOnly(const AName: string; var AValue: TColorRGBA); overload;
 
   end;
 
@@ -1155,151 +1189,6 @@ end;
 
 { TSerializer }
 
-procedure TSerializer.Define(const AName: string; const ASerializable: ISerializable);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := Serialize(ASerializable);
-    smUnserialize:
-      Unserialize(ASerializable, Value[AName].Cast<TUBSMap>);
-  end;
-end;
-
-procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>; const AInstantiator: TFunc<T>);
-var
-  List: TUBSList;
-  Item: T;
-  UBSValue: TUBSValue;
-begin
-  case Mode of
-    smSerialize:
-      begin
-        List := TUBSList.Create;
-        for Item in ACollection do
-          List.Add(Serialize(Item));
-        Value[AName] := List;
-      end;
-    smUnserialize:
-      begin
-        ACollection.Clear;
-        for UBSValue in Value[AName].Cast<TUBSList> do
-        begin
-          Item := AInstantiator;
-          Unserialize(Item, UBSValue.Cast<TUBSMap>);
-          ACollection.Add(Item);
-        end;
-      end;
-  end;
-end;
-
-procedure TSerializer.Define(const AName: string; var AValue: Integer);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := TUBSInteger.Create(AValue);
-    smUnserialize:
-      AValue := Value[AName].Cast<TUBSInteger>.Value;
-  end;
-end;
-
-procedure TSerializer.Define(const AName: string; var AValue: Single);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := TUBSSingle.Create(AValue);
-    smUnserialize:
-      AValue := Value[AName].Cast<TUBSSingle>.Value;
-  end;
-end;
-
-procedure TSerializer.Define(const AName: string; var AValue: string);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := TUBSString.Create(AValue);
-    smUnserialize:
-      AValue := Value[AName].Cast<TUBSString>.Value;
-  end;
-end;
-
-procedure TSerializer.Define(const AName: string; var AValue: Boolean);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := TUBSBoolean.Create(AValue);
-    smUnserialize:
-      AValue := Value[AName].Cast<TUBSBoolean>.Value;
-  end;
-end;
-
-procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>);
-begin
-  Define<T>(AName, ACollection,
-    function: T
-    begin
-      Result := T.Create;
-    end);
-end;
-
-procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<TUBSMap, T>);
-var
-  ubsMap: TUBSMap;
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := Serialize(ASerializable);
-    smUnserialize:
-      begin
-        ubsMap := Value[AName].Cast<TUBSMap>;
-        ASerializable := AInstantiator(ubsMap);
-        Unserialize(ASerializable, ubsMap);
-      end;
-  end;
-end;
-
-procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<T>);
-begin
-  case Mode of
-    smSerialize:
-      Value[AName] := Serialize(ASerializable);
-    smUnserialize:
-      begin
-        ASerializable := AInstantiator;
-        Unserialize(ASerializable, Value[AName].Cast<TUBSMap>);
-      end;
-  end;
-end;
-
-procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>;
-const AInstantiator: TFunc<TUBSMap, T>);
-var
-  List: TUBSList;
-  Item: T;
-  UBSValue: TUBSValue;
-  ubsMap: TUBSMap;
-begin
-  case Mode of
-    smSerialize:
-      begin
-        List := TUBSList.Create;
-        for Item in ACollection do
-          List.Add(Serialize(Item));
-        Value[AName] := List;
-      end;
-    smUnserialize:
-      begin
-        ACollection.Clear;
-        for UBSValue in Value[AName].Cast<TUBSList> do
-        begin
-          ubsMap := UBSValue.Cast<TUBSMap>;
-          Item := AInstantiator(ubsMap);
-          Unserialize(Item, ubsMap);
-          ACollection.Add(Item);
-        end;
-      end;
-  end;
-end;
-
 class function TSerializer.Serialize(ASerializable: ISerializable): TUBSMap;
 var
   Serializer: TSerializer;
@@ -1330,16 +1219,291 @@ begin
   end;
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; const AValue: Single);
+procedure TSerializer.Define(const AName: string; const ASerializable: ISerializable);
 begin
-  if Mode = smSerialize then
-    Value[AName] := TUBSSingle.Create(AValue);
+  case Mode of
+    smSerialize:
+      Value[AName] := Serialize(ASerializable);
+    smUnserialize:
+      Unserialize(ASerializable, Value[AName].Cast<TUBSMap>);
+  end;
+end;
+
+procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<T>);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := Serialize(ASerializable);
+    smUnserialize:
+      begin
+        ASerializable := AInstantiator;
+        Unserialize(ASerializable, Value[AName].Cast<TUBSMap>);
+      end;
+  end;
+end;
+
+procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<TUBSMap, T>);
+var
+  ubsMap: TUBSMap;
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := Serialize(ASerializable);
+    smUnserialize:
+      begin
+        ubsMap := Value[AName].Cast<TUBSMap>;
+        ASerializable := AInstantiator(ubsMap);
+        Unserialize(ASerializable, ubsMap);
+      end;
+  end;
+end;
+
+procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>; const AInstantiator: TFunc<T>);
+var
+  List: TUBSList;
+  Item: T;
+  UBSValue: TUBSValue;
+begin
+  case Mode of
+    smSerialize:
+      begin
+        List := TUBSList.Create;
+        for Item in ACollection do
+          List.Add(Serialize(Item));
+        Value[AName] := List;
+      end;
+    smUnserialize:
+      begin
+        ACollection.Clear;
+        for UBSValue in Value[AName].Cast<TUBSList> do
+        begin
+          Item := AInstantiator;
+          Unserialize(Item, UBSValue.Cast<TUBSMap>);
+          ACollection.Add(Item);
+        end;
+      end;
+  end;
+end;
+
+procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>;
+  const AInstantiator: TFunc<TUBSMap, T>);
+var
+  List: TUBSList;
+  Item: T;
+  UBSValue: TUBSValue;
+  ubsMap: TUBSMap;
+begin
+  case Mode of
+    smSerialize:
+      begin
+        List := TUBSList.Create;
+        for Item in ACollection do
+          List.Add(Serialize(Item));
+        Value[AName] := List;
+      end;
+    smUnserialize:
+      begin
+        ACollection.Clear;
+        for UBSValue in Value[AName].Cast<TUBSList> do
+        begin
+          ubsMap := UBSValue.Cast<TUBSMap>;
+          Item := AInstantiator(ubsMap);
+          Unserialize(Item, ubsMap);
+          ACollection.Add(Item);
+        end;
+      end;
+  end;
+end;
+
+procedure TSerializer.Define<T>(const AName: string; const ACollection: ICollection<T>);
+begin
+  Define<T>(AName, ACollection,
+    function: T
+    begin
+      Result := T.Create;
+    end);
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: Integer);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSInteger.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSInteger>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: Single);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSSingle.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSSingle>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: Boolean);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSBoolean.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSBoolean>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: string);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSString.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSString>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TGUID);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSGUID.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSGUID>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TIntBounds1);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSIntBounds1.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSIntBounds1>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TIntBounds2);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSIntBounds2.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSIntBounds2>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TIntBounds3);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSIntBounds3.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSIntBounds3>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TIntVector2);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSIntVector2.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSIntVector2>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TIntVector3);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSIntVector3.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSIntVector3>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TBounds1);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSBounds1.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSBounds1>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TBounds2);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSBounds2.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSBounds2>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TBounds3);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSBounds3.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSBounds3>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TVector2);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSVector2.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSVector2>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TVector3);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSVector3.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSVector3>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TColorRGB);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSColorRGB.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSColorRGB>.Value;
+  end;
+end;
+
+procedure TSerializer.Define(const AName: string; var AValue: TColorRGBA);
+begin
+  case Mode of
+    smSerialize:
+      Value[AName] := TUBSColorRGBA.Create(AValue);
+    smUnserialize:
+      AValue := Value[AName].Cast<TUBSColorRGBA>.Value;
+  end;
 end;
 
 procedure TSerializer.WriteOnly(const AName: string; const AValue: Integer);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSInteger.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; const AValue: Single);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSSingle.Create(AValue);
 end;
 
 procedure TSerializer.WriteOnly(const AName: string; const AValue: Boolean);
@@ -1352,6 +1516,84 @@ procedure TSerializer.WriteOnly(const AName, AValue: string);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSString.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TGUID);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSGUID.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds1);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSIntBounds1.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds2);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSIntBounds2.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds3);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSIntBounds3.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntVector2);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSIntVector2.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntVector3);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSIntVector3.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds1);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSBounds1.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds2);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSBounds2.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds3);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSBounds3.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TVector2);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSVector2.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TVector3);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSVector3.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TColorRGB);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSColorRGB.Create(AValue);
+end;
+
+procedure TSerializer.WriteOnly(const AName: string; var AValue: TColorRGBA);
+begin
+  if Mode = smSerialize then
+    Value[AName] := TUBSColorRGBA.Create(AValue);
 end;
 
 { TUBSValue }

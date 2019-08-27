@@ -10,6 +10,8 @@ uses
   Pengine.ICollections,
   Pengine.EventHandling,
   Pengine.Color,
+  Pengine.Lua,
+  Pengine.Lua.Header,
 
   Unbound.Game.Serialization;
 
@@ -52,9 +54,9 @@ type
 
   /// <summary>A material, which chunk terrain is made up of.</summary>
   ITerrainMaterial = interface(ISerializable)
-    function GetColor: TColorRGB;
+    function GetColor: TColorRGBA;
 
-    property Color: TColorRGB read GetColor;
+    property Color: TColorRGBA read GetColor;
 
   end;
 
@@ -157,10 +159,12 @@ type
   /// <summary>Contains game resources and behaviors.</summary>
   IGamePack = interface(ISerializable)
     function GetGUID: TGUID;
+    function GetDependencyGUIDs: IReadonlyList<TGUID>;
     function GetWorldGenerators: IReadonlyList<IWorldGenerator>;
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
 
     property GUID: TGUID read GetGUID;
+    property DependencyGUIDs: IReadonlyList<TGUID> read GetDependencyGUIDs;
 
     property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
 
@@ -170,9 +174,16 @@ type
 
   /// <summary>A game, consisting of multiple worlds and global game settings.</summary>
   IGame = interface(ISerializable)
+    function GetLua: TLua;
+    function GetLuaState: TLuaState;
+    function GetCore: IGamePack;
     function GetGamePacks: IReadonlyList<IGamePack>;
     function GetWorlds: IReadonlyList<IWorld>;
 
+    property Lua: TLua read GetLua;
+    property LuaState: TLuaState read GetLuaState;
+
+    property Core: IGamePack read GetCore;
     property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
     procedure AddGamePack(const AGamePack: IGamePack);
 
@@ -247,11 +258,11 @@ type
   TTerrainMaterial = class(TInterfacedObject, ITerrainMaterial, ISerializable)
   protected
     // ITerrainMaterial
-    function GetColor: TColorRGB; virtual; abstract;
+    function GetColor: TColorRGBA; virtual; abstract;
 
   public
     // ITerrainMaterial
-    property Color: TColorRGB read GetColor;
+    property Color: TColorRGBA read GetColor;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
@@ -460,11 +471,14 @@ type
   TGamePack = class(TInterfacedObject, IGamePack, ISerializable)
   private
     FGUID: TGUID;
+    FDependencyGUIDs: IList<TGUID>;
     FMaterials: IList<ITerrainMaterial>;
+    FWorldGenerators: IList<IWorldGenerator>;
 
     // IGamePack
-    function GetGUID: TGUID; virtual; abstract;
-    function GetWorldGenerators: IReadonlyList<IWorldGenerator>; virtual; abstract;
+    function GetGUID: TGUID;
+    function GetDependencyGUIDs: IReadonlyList<TGUID>;
+    function GetWorldGenerators: IReadonlyList<IWorldGenerator>;
     function GetMaterials: IReadonlyList<ITerrainMaterial>;
 
   public
@@ -473,6 +487,7 @@ type
 
     // IGamePack
     property GUID: TGUID read GetGUID;
+    property DependencyGUIDs: IReadonlyList<TGUID> read GetDependencyGUIDs;
 
     property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
 
@@ -485,19 +500,28 @@ type
 
   TGame = class(TInterfacedObject, IGame, ISerializable)
   private
+    FLua: TLua;
     FGamePacks: IList<IGamePack>;
     FWorlds: IList<IWorld>;
+    FCore: IGamePack;
 
     function CreateWorld: IWorld;
 
     // IGame
+    function GetLua: TLua;
+    function GetLuaState: TLuaState;
     function GetGamePacks: IReadonlyList<IGamePack>;
     function GetWorlds: IReadonlyList<IWorld>;
+    function GetCore: IGamePack;
 
   public
     constructor Create;
 
     // IGame
+    property Lua: TLua read GetLua;
+    property LuaState: TLuaState read GetLuaState;
+
+    property Core: IGamePack read GetCore;
     property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
     procedure AddGamePack(const AGamePack: IGamePack);
 
@@ -512,7 +536,7 @@ type
 implementation
 
 uses
-  Unbound.Game.WorldFeatures;
+  Unbound.Game.WorldFeatures, Unbound.Game.Core;
 
 { TWorldFeature }
 
@@ -877,9 +901,24 @@ end;
 
 { TGamePack }
 
+function TGamePack.GetDependencyGUIDs: IReadonlyList<TGUID>;
+begin
+  Result := FDependencyGUIDs.ReadonlyList;
+end;
+
+function TGamePack.GetGUID: TGUID;
+begin
+  Result := FGUID;
+end;
+
 function TGamePack.GetMaterials: IReadonlyList<ITerrainMaterial>;
 begin
   Result := FMaterials.ReadonlyList;
+end;
+
+function TGamePack.GetWorldGenerators: IReadonlyList<IWorldGenerator>;
+begin
+  Result := FWorldGenerators.ReadonlyList;
 end;
 
 constructor TGamePack.Create;
@@ -891,11 +930,12 @@ constructor TGamePack.Create(AGUID: TGUID);
 begin
   FGUID := AGUID;
   FMaterials := TList<ITerrainMaterial>.Create;
+  FWorldGenerators := TList<IWorldGenerator>.Create;
 end;
 
 procedure TGamePack.Serialize(ASerializer: TSerializer);
 begin
-  // ASerializer.Define('GUID', FGUID);
+  ASerializer.Define('GUID', FGUID);
 end;
 
 { TGame }
@@ -905,9 +945,24 @@ begin
   Result := TWorld.Create(Self);
 end;
 
+function TGame.GetCore: IGamePack;
+begin
+  Result := FCore;
+end;
+
 function TGame.GetGamePacks: IReadonlyList<IGamePack>;
 begin
   Result := FGamePacks.ReadonlyList;
+end;
+
+function TGame.GetLua: TLua;
+begin
+  Result := FLua;
+end;
+
+function TGame.GetLuaState: TLuaState;
+begin
+  Result := FLua.L;
 end;
 
 function TGame.GetWorlds: IReadonlyList<IWorld>;
@@ -917,8 +972,11 @@ end;
 
 constructor TGame.Create;
 begin
+  FLua := TLua.Create;
   FGamePacks := TList<IGamePack>.Create;
   FWorlds := TList<IWorld>.Create;
+  FCore := TGamePackCore.Create;
+  AddGamePack(FCore);
 end;
 
 procedure TGame.AddGamePack(const AGamePack: IGamePack);
@@ -927,7 +985,7 @@ var
 begin
   FGamePacks.Add(AGamePack);
   for Generator in AGamePack.WorldGenerators do
-    FWorlds.Add(TWorld.Create(Self, Generator));
+    AddWorld(Generator);
 end;
 
 function TGame.AddWorld(const AGenerator: IWorldGenerator): IWorld;

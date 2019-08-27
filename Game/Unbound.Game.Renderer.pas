@@ -60,8 +60,9 @@ implementation
 
 procedure TChunkRenderable.BuildTerrainVAO;
 
-  function Mix(F: Single; A, B: TColorRGB): TColorRGB;
+  function Mix(F: Single; A, B: TColorRGBA): TColorRGBA;
   begin
+    F := A.A * (F * B.A - 1) + 1;
     Result := A + F * (B - A);
   end;
 

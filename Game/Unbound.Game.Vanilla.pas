@@ -22,10 +22,19 @@ type
 
   private
 
+  public
+    constructor Create;
 
   end;
 
 implementation
+
+{ TGamePackVanilla }
+
+constructor TGamePackVanilla.Create;
+begin
+  inherited Create(TGamePackVanilla.GUID);
+end;
 
 end.
 
