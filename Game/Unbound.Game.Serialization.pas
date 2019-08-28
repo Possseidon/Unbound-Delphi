@@ -455,6 +455,7 @@ type
     procedure Define(const AName: string; var AValue: string); overload;
 
     procedure Define(const AName: string; var AValue: TGUID); overload;
+    procedure Define(const AName: string; ACollection: ICollection<TGUID>); overload;
 
     procedure Define(const AName: string; var AValue: TIntBounds1); overload;
     procedure Define(const AName: string; var AValue: TIntBounds2); overload;
@@ -476,22 +477,22 @@ type
     procedure WriteOnly(const AName: string; const AValue: Boolean); overload;
     procedure WriteOnly(const AName: string; const AValue: string); overload;
 
-    procedure WriteOnly(const AName: string; var AValue: TGUID); overload;
+    procedure WriteOnly(const AName: string; const AValue: TGUID); overload;
 
-    procedure WriteOnly(const AName: string; var AValue: TIntBounds1); overload;
-    procedure WriteOnly(const AName: string; var AValue: TIntBounds2); overload;
-    procedure WriteOnly(const AName: string; var AValue: TIntBounds3); overload;
-    procedure WriteOnly(const AName: string; var AValue: TIntVector2); overload;
-    procedure WriteOnly(const AName: string; var AValue: TIntVector3); overload;
+    procedure WriteOnly(const AName: string; const AValue: TIntBounds1); overload;
+    procedure WriteOnly(const AName: string; const AValue: TIntBounds2); overload;
+    procedure WriteOnly(const AName: string; const AValue: TIntBounds3); overload;
+    procedure WriteOnly(const AName: string; const AValue: TIntVector2); overload;
+    procedure WriteOnly(const AName: string; const AValue: TIntVector3); overload;
 
-    procedure WriteOnly(const AName: string; var AValue: TBounds1); overload;
-    procedure WriteOnly(const AName: string; var AValue: TBounds2); overload;
-    procedure WriteOnly(const AName: string; var AValue: TBounds3); overload;
-    procedure WriteOnly(const AName: string; var AValue: TVector2); overload;
-    procedure WriteOnly(const AName: string; var AValue: TVector3); overload;
+    procedure WriteOnly(const AName: string; const AValue: TBounds1); overload;
+    procedure WriteOnly(const AName: string; const AValue: TBounds2); overload;
+    procedure WriteOnly(const AName: string; const AValue: TBounds3); overload;
+    procedure WriteOnly(const AName: string; const AValue: TVector2); overload;
+    procedure WriteOnly(const AName: string; const AValue: TVector3); overload;
 
-    procedure WriteOnly(const AName: string; var AValue: TColorRGB); overload;
-    procedure WriteOnly(const AName: string; var AValue: TColorRGBA); overload;
+    procedure WriteOnly(const AName: string; const AValue: TColorRGB); overload;
+    procedure WriteOnly(const AName: string; const AValue: TColorRGBA); overload;
 
   end;
 
@@ -1494,6 +1495,29 @@ begin
   end;
 end;
 
+procedure TSerializer.Define(const AName: string; ACollection: ICollection<TGUID>);
+var
+  List: TUBSList;
+  GUID: TGUID;
+  UBSValue: TUBSValue;
+begin
+  case Mode of
+    smSerialize:
+      begin
+        List := TUBSList.Create;
+        for GUID in ACollection do
+          List.Add(TUBSGUID.Create(GUID));
+        Value[AName] := List;
+      end;
+    smUnserialize:
+      begin
+        ACollection.Clear;
+        for UBSValue in Value[AName].Cast<TUBSList> do
+          ACollection.Add(UBSValue.Cast<TUBSGUID>.Value);
+      end;
+  end;
+end;
+
 procedure TSerializer.WriteOnly(const AName: string; const AValue: Integer);
 begin
   if Mode = smSerialize then
@@ -1518,79 +1542,79 @@ begin
     Value[AName] := TUBSString.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TGUID);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TGUID);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSGUID.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds1);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TIntBounds1);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSIntBounds1.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds2);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TIntBounds2);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSIntBounds2.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntBounds3);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TIntBounds3);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSIntBounds3.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntVector2);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TIntVector2);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSIntVector2.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TIntVector3);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TIntVector3);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSIntVector3.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds1);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TBounds1);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSBounds1.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds2);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TBounds2);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSBounds2.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TBounds3);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TBounds3);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSBounds3.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TVector2);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TVector2);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSVector2.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TVector3);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TVector3);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSVector3.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TColorRGB);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TColorRGB);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSColorRGB.Create(AValue);
 end;
 
-procedure TSerializer.WriteOnly(const AName: string; var AValue: TColorRGBA);
+procedure TSerializer.WriteOnly(const AName: string; const AValue: TColorRGBA);
 begin
   if Mode = smSerialize then
     Value[AName] := TUBSColorRGBA.Create(AValue);

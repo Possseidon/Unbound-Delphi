@@ -32,7 +32,7 @@ type
     procedure DoUnload; virtual;
 
   public
-    constructor Create(const AManager: TGameStateManager);
+    constructor Create(AManager: TGameStateManager);
     destructor Destroy; override;
 
     property Manager: TGameStateManager read GetManager;
@@ -114,7 +114,7 @@ begin
     Unload;
 end;
 
-constructor TGameState.Create(const AManager: TGameStateManager);
+constructor TGameState.Create(AManager: TGameStateManager);
 begin
   FManager := AManager;
 end;

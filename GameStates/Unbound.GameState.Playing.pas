@@ -11,13 +11,15 @@ type
 
   TGameStatePlaying = class(TGameState)
   private
-    FGame: IGame;
+    FGame: TGame;
     FRenderer: TGameRenderer;
-    FVanilla: IGamePack;
 
   protected
     procedure DoLoad; override;
     procedure DoUnload; override;
+
+  public
+    procedure Render; override;
 
   end;
 
@@ -31,16 +33,18 @@ uses
 procedure TGameStatePlaying.DoLoad;
 begin
   FGame := TGame.Create;
-  FVanilla := TGamePackVanilla.Create;
-  FGame.AddGamePack(FVanilla);
   FRenderer := TGameRenderer.Create(FGame);
 end;
 
 procedure TGameStatePlaying.DoUnload;
 begin
   FRenderer.Free;
-  FVanilla := nil;
-  FGame := nil;
+  FGame.Free;
+end;
+
+procedure TGameStatePlaying.Render;
+begin
+  FRenderer.Camera.Render;
 end;
 
 end.

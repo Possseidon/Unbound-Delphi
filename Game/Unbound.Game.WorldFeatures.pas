@@ -11,16 +11,16 @@ type
 
   TWorldFeatureTerrain = class(TWorldFeature)
   protected
-    procedure CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3); virtual; abstract;
+    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); virtual; abstract;
 
   public
-    procedure Apply(const AChunk: IChunk); override;
+    procedure Apply(AChunk: TChunk); override;
 
   end;
 
   TWorldFeatureHeightmap = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -29,7 +29,7 @@ type
 
   TWorldFeatureNoise = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -38,7 +38,7 @@ type
 
   TWorldFeatureStructure = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -57,7 +57,7 @@ implementation
 
 { TWorldFeatureTerrain }
 
-procedure TWorldFeatureTerrain.Apply(const AChunk: IChunk);
+procedure TWorldFeatureTerrain.Apply(AChunk: TChunk);
 var
   X, Y, Z: Integer;
 begin
@@ -70,7 +70,7 @@ end;
 
 { TWorldFeatureHeightmap }
 
-procedure TWorldFeatureHeightmap.CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureHeightmap.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
 begin
 
 end;
@@ -82,7 +82,7 @@ end;
 
 { TWorldFeatureNoise }
 
-procedure TWorldFeatureNoise.CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureNoise.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
 begin
 
 end;
@@ -94,7 +94,7 @@ end;
 
 { TWorldFeatureStructure }
 
-procedure TWorldFeatureStructure.CalculateBlock(const AChunk: IChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureStructure.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
 begin
 
 end;

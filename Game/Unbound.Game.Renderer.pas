@@ -23,7 +23,7 @@ type
 
   TChunkRenderable = class(TRenderable)
   private
-    FChunk: IChunk;
+    FChunk: TChunk;
     FTerrainShader: IResource<TGLProgram>;
     FTerrainChanged: Boolean;
     FTerrainVAO: TVAOMutable<TTerrainShader.TData>;
@@ -33,9 +33,9 @@ type
     procedure BuildTerrainVAO;
 
   public
-    constructor Create(AGLState: TGLState; const AChunk: IChunk);
+    constructor Create(AGLState: TGLState; AChunk: TChunk);
 
-    property Chunk: IChunk read FChunk;
+    property Chunk: TChunk read FChunk;
 
     procedure Render; override;
 
@@ -43,11 +43,11 @@ type
 
   TGameRenderer = class
   private
-    FGame: IGame;
+    FGame: TGame;
     FCamera: TCamera;
 
   public
-    constructor Create(const AGame: IGame);
+    constructor Create(AGame: TGame);
     destructor Destroy; override;
 
     property Camera: TCamera read FCamera;
@@ -66,7 +66,7 @@ procedure TChunkRenderable.BuildTerrainVAO;
     Result := A + F * (B - A);
   end;
 
-  function ColorAt(const ATerrain: ITerrain; APos: TIntVector3; AOffset: TVector3): TColorRGB;
+  function ColorAt(ATerrain: TTerrain; APos: TIntVector3; AOffset: TVector3): TColorRGB;
   begin
     Result := 
       Mix(AOffset.Z, 
@@ -81,7 +81,7 @@ procedure TChunkRenderable.BuildTerrainVAO;
 var
   Data: TTerrainShader.TData;
   VBOData: IList<TTerrainShader.TData>;
-  Terrain: ITerrain;
+  Terrain: TTerrain;
   P: TIntVector3;
   Plane: TPlane3;
   TexCoord: TVector2;
@@ -110,7 +110,7 @@ begin
   FTerrainChanged := False;
 end;
 
-constructor TChunkRenderable.Create(AGLState: TGLState; const AChunk: IChunk);
+constructor TChunkRenderable.Create(AGLState: TGLState; AChunk: TChunk);
 begin
   FChunk := AChunk;
   FTerrainShader := TTerrainShader.Get(AGLState);
@@ -132,7 +132,7 @@ end;
 
 { TGameRenderer }
 
-constructor TGameRenderer.Create(const AGame: IGame);
+constructor TGameRenderer.Create(AGame: TGame);
 begin
   FGame := AGame;
   FCamera := TCamera.Create(75, 1, 0.01, 1000);

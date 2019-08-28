@@ -12,364 +12,247 @@ uses
   Pengine.Color,
   Pengine.Lua,
   Pengine.Lua.Header,
+  Pengine.Interfaces,
 
   Unbound.Game.Serialization;
 
 type
 
-  // --- Interfaces ---
+  EUnboundError = class(Exception);
 
-  IGame = interface;
-  IWorld = interface;
-  IChunk = interface;
+  TWorld = class;
+  TChunk = class;
 
   /// <summary>A block aligned position in a world.</summary>
   IBlockPosition = interface(ISerializable)
-    function GetWorld: IWorld;
+    function GetWorld: TWorld;
     function GetPosition: TIntVector3;
     procedure SetPosition(const Value: TIntVector3);
-    function GetChunk: IChunk;
+    function GetChunk: TChunk;
 
-    property World: IWorld read GetWorld;
+    property World: TWorld read GetWorld;
     property Position: TIntVector3 read GetPosition write SetPosition;
-    property Chunk: IChunk read GetChunk;
+    property Chunk: TChunk read GetChunk;
 
   end;
 
-  /// <summary>A location (position and rotation) in a world.</summary>
-  IWorldLocation = interface(ISerializable)
-    function GetWorld: IWorld;
-    function GetLocation: TLocation3;
-    procedure SetLocation(const Value: TLocation3);
-    function GetChunk: IChunk;
-
-    function Copy: IWorldLocation;
-    procedure Assign(const AFrom: IWorldLocation);
-
-    property World: IWorld read GetWorld;
-    property Location: TLocation3 read GetLocation write SetLocation;
-    property Chunk: IChunk read GetChunk;
-
-  end;
-
-  /// <summary>A material, which chunk terrain is made up of.</summary>
-  ITerrainMaterial = interface(ISerializable)
-    function GetColor: TColorRGBA;
-
-    property Color: TColorRGBA read GetColor;
-
-  end;
-
-  /// <summary>The terrain which a chunk is made up of.</summary>
-  ITerrain = interface(ISerializable)
-    function GetMaterials: IReadonlyList<ITerrainMaterial>;
-    function GetSize: TIntVector3;
-    function GetMaterialIDAt(const APos: TIntVector3): Integer;
-    procedure SetMaterialIDAt(const APos: TIntVector3; const Value: Integer);
-    function GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
-    procedure SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
-    function GetOnChange: TEvent<ITerrain>.TAccess;
-
-    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
-    function GetMaterialID(AMaterial: ITerrainMaterial): Integer;
-    procedure RemoveUnusedMaterials;
-
-    property Size: TIntVector3 read GetSize;
-    property MaterialIDAt[const APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
-    property MaterialAt[const APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
-
-    property OnChange: TEvent<ITerrain>.TAccess read GetOnChange;
-
-  end;
-
-  /// <summary>Block aligned models, which can take up multiple block spaces per model.</summary>
-  IDesign = interface(ISerializable)
-
-  end;
-
-  /// <summary>An entity, which can be placed and moved freely in the world.</summary>
-  IEntity = interface(ISerializable)
-    function GetGUID: TGUID;
-    function GetLocation: IWorldLocation;
-    procedure SetLocation(const Value: IWorldLocation);
-
-    property GUID: TGUID read GetGUID;
-    property Location: IWorldLocation read GetLocation write SetLocation;
-
-  end;
-
-  /// <summary>A cuboid chunk of a world, made up of terrain, design and entities.</summary>
-  IChunk = interface(ISerializable)
-    function GetWorld: IWorld;
-    function GetChunkPos: TIntVector3;
-    function GetWorldPos: TIntVector3;
-    function GetSize: TIntVector3;
-    function GetTerrain: ITerrain;
-    function GetDesign: IDesign;
-    function GetEntities: IReadonlyList<IEntity>;
-
-    property World: IWorld read GetWorld;
-    property ChunkPos: TIntVector3 read GetChunkPos;
-    property WorldPos: TIntVector3 read GetWorldPos;
-    property Size: TIntVector3 read GetSize;
-
-    property Terrain: ITerrain read GetTerrain;
-    property Design: IDesign read GetDesign;
-    property Entities: IReadonlyList<IEntity> read GetEntities;
-
-  end;
-
-  IWorldGenerator = interface;
-
-  /// <summary>A feature, that generates a chunk via the "Apply" method.</summary>
-  IWorldFeature = interface(ISerializable)
-    function GetGenerator: IWorldGenerator;
-
-    property Generator: IWorldGenerator read GetGenerator;
-
-    procedure Apply(const AChunk: IChunk);
-
-  end;
-
-  /// <summary>A list of world features, which get applied in order, making up a world generator.</summary>
-  IWorldGenerator = interface(ISerializable)
-    function GetFeatures: IReadonlyList<IWorldFeature>;
-
-    procedure GenerateChunk(const AChunk: IChunk);
-
-    property Features: IReadonlyList<IWorldFeature> read GetFeatures;
-
-  end;
-
-  /// <summary>A close to infinite world, consisting of cuboid chunks.</summary>
-  IWorld = interface(ISerializable)
-    function GetGame: IGame;
-    function GetGenerator: IWorldGenerator;
-    function GetChunks: IReadonlyMap<TIntVector3, IChunk>;
-    function GetChunkSize: TIntVector3;
-
-    property Game: IGame read GetGame;
-    property Generator: IWorldGenerator read GetGenerator;
-    property Chunks: IReadonlyMap<TIntVector3, IChunk> read GetChunks;
-    property ChunkSize: TIntVector3 read GetChunkSize;
-
-  end;
-
-  // TODO: Split GamePack up, when necessary
-  /// <summary>Contains game resources and behaviors.</summary>
-  IGamePack = interface(ISerializable)
-    function GetGUID: TGUID;
-    function GetDependencyGUIDs: IReadonlyList<TGUID>;
-    function GetWorldGenerators: IReadonlyList<IWorldGenerator>;
-    function GetMaterials: IReadonlyList<ITerrainMaterial>;
-
-    property GUID: TGUID read GetGUID;
-    property DependencyGUIDs: IReadonlyList<TGUID> read GetDependencyGUIDs;
-
-    property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
-
-    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
-
-  end;
-
-  /// <summary>A game, consisting of multiple worlds and global game settings.</summary>
-  IGame = interface(ISerializable)
-    function GetLua: TLua;
-    function GetLuaState: TLuaState;
-    function GetCore: IGamePack;
-    function GetGamePacks: IReadonlyList<IGamePack>;
-    function GetWorlds: IReadonlyList<IWorld>;
-
-    property Lua: TLua read GetLua;
-    property LuaState: TLuaState read GetLuaState;
-
-    property Core: IGamePack read GetCore;
-    property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
-    procedure AddGamePack(const AGamePack: IGamePack);
-
-    property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld(const AGenerator: IWorldGenerator): IWorld;
-
-  end;
-
-  // TODO: Move this
-  /// <summary>A special kind of entity, that reacts to physics.</summary>
-  IPhysicsEntity = interface(IEntity)
-    function GetVelocity: TVector3;
-    procedure SetVelocity(const Value: TVector3);
-
-    property Velocity: TVector3 read GetVelocity write SetVelocity;
-
-  end;
-
-  /// <summary>A player entity, usually controlled by an actual player.</summary>
-  IPlayer = interface(IPhysicsEntity)
-    function GetName: string;
-
-    property Name: string read GetName;
-
-  end;
-
-  // --- Implementations ---
-
-  TWorldFeatureClass = class of TWorldFeature;
-
-  TWorldFeature = class(TInterfacedObject, IWorldFeature, ISerializable)
+  TBlockPosition = class(TInterfaceBase, IBlockPosition, ISerializable)
   private
-    [Weak]
-    FGenerator: IWorldGenerator;
+    FWorld: TWorld;
+    FPosition: TIntVector3;
 
-    function GetGenerator: IWorldGenerator;
-
-  public
-    constructor Create(const AGenerator: IWorldGenerator);
-    class function CreateTyped(const AGenerator: IWorldGenerator; AUBSMap: TUBSMap): IWorldFeature;
-    class function GetName: string; virtual; abstract;
-
-    property Generator: IWorldGenerator read GetGenerator;
-
-    procedure Serialize(ASerializer: TSerializer);
-
-    procedure Apply(const AChunk: IChunk); virtual; abstract;
-
-  end;
-
-  TWorldGenerator = class(TInterfacedObject, IWorldGenerator, ISerializable)
-  private
-    FFeatures: IList<IWorldFeature>;
-
-    function CreateFeature(AUBSMap: TUBSMap): IWorldFeature;
-
-    function GetFeatures: IReadonlyList<IWorldFeature>;
+    // IBlockPosition
+    function GetWorld: TWorld;
+    function GetPosition: TIntVector3;
+    procedure SetPosition(const Value: TIntVector3);
+    function GetChunk: TChunk;
 
   public
-    constructor Create;
+    constructor Create(AWorld: TWorld); overload;
+    constructor Create(AWorld: TWorld; const APosition: TIntVector3); overload;
 
-    procedure GenerateChunk(const AChunk: IChunk);
-
-    property Features: IReadonlyList<IWorldFeature> read GetFeatures;
-
-    procedure Serialize(ASerializer: TSerializer);
-
-  end;
-
-  TWorld = class;
-
-  TTerrainMaterial = class(TInterfacedObject, ITerrainMaterial, ISerializable)
-  protected
-    // ITerrainMaterial
-    function GetColor: TColorRGBA; virtual; abstract;
-
-  public
-    // ITerrainMaterial
-    property Color: TColorRGBA read GetColor;
+    // IBlockPosition
+    property World: TWorld read GetWorld;
+    property Position: TIntVector3 read GetPosition write SetPosition;
+    property Chunk: TChunk read GetChunk;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
   end;
 
-  TTerrain = class(TInterfacedObject, ITerrain, ISerializable)
+  /// <summary>A location (position and rotation) in a world.</summary>
+  IWorldLocation = interface(ISerializable)
+    function GetWorld: TWorld;
+    function GetLocation: TLocation3;
+    procedure SetLocation(const Value: TLocation3);
+    function GetChunk: TChunk;
+
+    function Copy: IWorldLocation;
+    procedure Assign(const AFrom: IWorldLocation);
+
+    property World: TWorld read GetWorld;
+    property Location: TLocation3 read GetLocation write SetLocation;
+    property Chunk: TChunk read GetChunk;
+
+  end;
+
+  TWorldLocation = class(TInterfacedObject, IWorldLocation, ISerializable)
+  private
+    FWorld: TWorld;
+    FLocation: TLocation3;
+
+    function GetWorld: TWorld;
+    function GetLocation: TLocation3;
+    procedure SetLocation(const Value: TLocation3);
+    function GetChunk: TChunk;
+
+  public
+    constructor Create(AWorld: TWorld); overload;
+    constructor Create(AWorld: TWorld; ALocation: TLocation3); overload;
+    destructor Destroy; override;
+
+    function Copy: IWorldLocation;
+    procedure Assign(const AFrom: IWorldLocation);
+
+    property World: TWorld read GetWorld;
+    property Location: TLocation3 read GetLocation write SetLocation;
+    property Chunk: TChunk read GetChunk;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer);
+
+  end;
+
+  /// <summary>A material, which chunk terrain is made up of.</summary>
+  TTerrainMaterial = class(TInterfaceBase, ISerializable)
+  private
+    FColor: TColorRGBA;
+
+  public
+    property Color: TColorRGBA read FColor;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer);
+
+  end;
+
+  /// <summary>The terrain which a chunk is made up of.</summary>
+  TTerrain = class(TInterfaceBase, ISerializable)
   public const
 
     MaxVolume = $10000;
 
   private
     FSize: TIntVector3;
-    FMaterials: IList<ITerrainMaterial>;
+    FMaterials: IObjectList<TTerrainMaterial>;
     FData: array of Word;
-    FOnChange: TEvent<ITerrain>;
+    FOnChange: TEvent<TTerrain>;
 
     function PosToIndex(const APos: TIntVector3): Integer; inline;
     procedure Change; inline;
 
-    // ITerrain
-    function GetMaterials: IReadonlyList<ITerrainMaterial>;
-    function GetSize: TIntVector3;
+    function GetMaterials: IReadonlyList<TTerrainMaterial>;
     function GetMaterialIDAt(const APos: TIntVector3): Integer;
     procedure SetMaterialIDAt(const APos: TIntVector3; const Value: Integer);
-    function GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
-    procedure SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
-    function GetOnChange: TEvent<ITerrain>.TAccess;
+    function GetMaterialAt(const APos: TIntVector3): TTerrainMaterial;
+    procedure SetMaterialAt(const APos: TIntVector3; const Value: TTerrainMaterial);
+    function GetOnChange: TEvent<TTerrain>.TAccess;
 
   public
     constructor Create(const ASize: TIntVector3);
 
-    // ITerrain
-    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
-    function GetMaterialID(AMaterial: ITerrainMaterial): Integer;
+    property Materials: IReadonlyList<TTerrainMaterial> read GetMaterials;
+    function GetMaterialID(AMaterial: TTerrainMaterial): Integer;
     procedure RemoveUnusedMaterials;
 
-    property Size: TIntVector3 read GetSize;
+    property Size: TIntVector3 read FSize;
     property MaterialIDAt[const APos: TIntVector3]: Integer read GetMaterialIDAt write SetMaterialIDAt;
-    property MaterialAt[const APos: TIntVector3]: ITerrainMaterial read GetMaterialAt write SetMaterialAt; default;
+    property MaterialAt[const APos: TIntVector3]: TTerrainMaterial read GetMaterialAt write SetMaterialAt; default;
 
-    property OnChange: TEvent<ITerrain>.TAccess read GetOnChange;
+    property OnChange: TEvent<TTerrain>.TAccess read GetOnChange;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
   end;
 
-  TChunk = class(TInterfacedObject, IChunk, ISerializable)
-  private
-    [Weak]
-    FWorld: IWorld;
-    FChunkPos: TIntVector3;
-    FTerrain: ITerrain;
-    FDesign: IDesign;
-    FEntities: IList<IEntity>;
+  /// <summary>Block aligned models, which can take up multiple block spaces per model.</summary>
+  TDesign = class(TInterfaceBase, ISerializable)
+  public
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer);
 
-    // IChunk
-    function GetSize: TIntVector3;
-    function GetWorld: IWorld;
-    function GetTerrain: ITerrain;
-    function GetChunkPos: TIntVector3;
-    function GetWorldPos: TIntVector3;
-    function GetDesign: IDesign;
-    function GetEntities: IReadonlyList<IEntity>;
+  end;
+
+  /// <summary>An entity, which can be placed and moved freely in the world.</summary>
+  TEntity = class(TInterfaceBase, ISerializable)
+  private
+    FGUID: TGUID;
+    FLocation: IWorldLocation;
+
+    procedure SetLocation(const Value: IWorldLocation);
 
   public
-    constructor Create(const AWorld: IWorld; const AChunkPos, ASize: TIntVector3);
+    constructor Create(const ALocation: IWorldLocation);
 
-    // IChunk
-    property World: IWorld read GetWorld;
-    property ChunkPos: TIntVector3 read GetChunkPos;
+    property GUID: TGUID read FGUID;
+    property Location: IWorldLocation read FLocation write SetLocation;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer); virtual;
+
+  end;
+
+  /// <summary>A cuboid chunk of a world, made up of terrain, design and entities.</summary>
+  TChunk = class(TInterfaceBase, ISerializable)
+  private
+    FWorld: TWorld;
+    FChunkPos: TIntVector3;
+    FTerrain: TTerrain;
+    FDesign: TDesign;
+    FEntities: IObjectList<TEntity>;
+
+    function GetWorldPos: TIntVector3;
+    function GetSize: TIntVector3;
+    function GetEntities: IReadonlyList<TEntity>;
+
+  public
+    constructor Create(AWorld: TWorld; const AChunkPos, ASize: TIntVector3);
+    destructor Destroy; override;
+
+    property World: TWorld read FWorld;
+    property ChunkPos: TIntVector3 read FChunkPos;
     property WorldPos: TIntVector3 read GetWorldPos;
     property Size: TIntVector3 read GetSize;
 
-    property Terrain: ITerrain read GetTerrain;
-    property Design: IDesign read GetDesign;
-    property Entities: IReadonlyList<IEntity> read GetEntities;
+    property Terrain: TTerrain read FTerrain;
+    property Design: TDesign read FDesign;
+    property Entities: IReadonlyList<TEntity> read GetEntities;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
   end;
 
-  TWorldLocation = class(TInterfacedObject, IWorldLocation, ISerializable)
-  private
-    [Weak]
-    FWorld: IWorld;
-    FLocation: TLocation3;
+  TWorldGenerator = class;
 
-    // IWorldLocation
-    function GetWorld: IWorld;
-    function GetLocation: TLocation3;
-    procedure SetLocation(const Value: TLocation3);
-    function GetChunk: IChunk;
+  TWorldFeatureClass = class of TWorldFeature;
+
+  /// <summary>A feature, that generates a chunk via the "Apply" method.</summary>
+  TWorldFeature = class(TInterfaceBase, ISerializable)
+  private
+    FGenerator: TWorldGenerator;
 
   public
-    constructor Create(const AWorld: IWorld);
+    constructor Create(AGenerator: TWorldGenerator);
     destructor Destroy; override;
 
-    // IWorldLocation
-    function Copy: IWorldLocation;
-    procedure Assign(const AFrom: IWorldLocation);
+    class function CreateTyped(AGenerator: TWorldGenerator; AUBSMap: TUBSMap): TWorldFeature;
+    class function GetName: string; virtual; abstract;
 
-    property World: IWorld read GetWorld;
-    property Location: TLocation3 read GetLocation write SetLocation;
-    property Chunk: IChunk read GetChunk;
+    property Generator: TWorldGenerator read FGenerator;
+
+    procedure Serialize(ASerializer: TSerializer);
+
+    procedure Apply(AChunk: TChunk); virtual; abstract;
+
+  end;
+
+  /// <summary>A list of world features, which get applied in order, making up a world generator.</summary>
+  TWorldGenerator = class(TInterfaceBase, ISerializable)
+  private
+    FFeatures: IObjectList<TWorldFeature>;
+
+    function CreateFeature(AUBSMap: TUBSMap): TWorldFeature;
+    function GetFeatures: IReadonlyList<TWorldFeature>;
+
+  public
+    constructor Create;
+
+    procedure GenerateChunk(AChunk: TChunk);
+
+    property Features: IReadonlyList<TWorldFeature> read GetFeatures;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
@@ -378,158 +261,125 @@ type
 
   TGame = class;
 
-  TWorld = class(TInterfacedObject, IWorld, ISerializable)
+  /// <summary>A close to infinite world, consisting of cuboid chunks.</summary>
+  TWorld = class(TInterfaceBase, ISerializable)
   public const
 
     DefaultChunkSize: TIntVector3 = (X: 32; Y: 32; Z: 32);
 
   private
-    [Weak]
-    FGame: IGame;
-    FGenerator: IWorldGenerator;
-    FChunks: IMap<TIntVector3, IChunk>;
+    FGame: TGame;
+    FGenerator: TWorldGenerator;
+    FChunks: IToObjectMap<TIntVector3, TChunk>;
     FChunkSize: TIntVector3;
 
-    function CreateGenerator: IWorldGenerator;
+    function CreateGenerator: TWorldGenerator;
 
-    // IWorld
-    function GetChunks: IReadonlyMap<TIntVector3, IChunk>;
-    function GetGame: IGame;
-    function GetGenerator: IWorldGenerator;
-    function GetChunkSize: TIntVector3;
+    function GetChunks: IReadonlyMap<TIntVector3, TChunk>;
 
   public
-    constructor Create(const AGame: IGame); overload;
-    constructor Create(const AGame: IGame; const AGenerator: IWorldGenerator); overload;
+    constructor Create(AGame: TGame); overload;
+    constructor Create(AGame: TGame; AGenerator: TWorldGenerator); overload;
+    destructor Destroy; override;
 
-    // IWorld
-    property Game: IGame read GetGame;
-    property Generator: IWorldGenerator read GetGenerator;
-    property Chunks: IReadonlyMap<TIntVector3, IChunk> read GetChunks;
-    property ChunkSize: TIntVector3 read GetChunkSize;
+    property Game: TGame read FGame;
+    property Generator: TWorldGenerator read FGenerator;
+    property Chunks: IReadonlyMap<TIntVector3, TChunk> read GetChunks;
+    property ChunkSize: TIntVector3 read FChunkSize;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
   end;
 
-  TEntity = class(TInterfacedObject, IEntity, ISerializable)
-  private
-    FGUID: TGUID;
-    FLocation: IWorldLocation;
-
-    // IEntity
-    function GetGUID: TGUID;
-    function GetLocation: IWorldLocation;
-    procedure SetLocation(const Value: IWorldLocation);
-
-  public
-    constructor Create(const ALocation: IWorldLocation);
-
-    // IEntity
-    property GUID: TGUID read GetGUID;
-    property Location: IWorldLocation read GetLocation write SetLocation;
-
-    // ISerializable
-    procedure Serialize(ASerializer: TSerializer); virtual;
-
-  end;
-
-  TPhysicsEntity = class(TEntity, IPhysicsEntity, IEntity, ISerializable)
-  private
-    FVelocity: TVector3;
-
-    // IPhysicsEntity
-    function GetVelocity: TVector3;
-    procedure SetVelocity(const Value: TVector3);
-
-  public
-    // IPhysicsEntity
-    property Velocity: TVector3 read GetVelocity write SetVelocity;
-
-    // ISerializable
-    procedure Serialize(ASerializer: TSerializer); override;
-
-  end;
-
-  TPlayer = class(TPhysicsEntity, IPlayer, IPhysicsEntity, IEntity, ISerializable)
+  // TODO: Split GamePack up, when necessary
+  /// <summary>Contains game resources and behaviors.</summary>
+  TGamePack = class(TInterfaceBase, ISerializable)
   private
     FName: string;
-
-    // IPlayer
-    function GetName: string;
-
-  public
-    // IPlayer
-    property Name: string read GetName;
-
-    // ISerializable
-    procedure Serialize(ASerializer: TSerializer); override;
-
-  end;
-
-  TGamePack = class(TInterfacedObject, IGamePack, ISerializable)
-  private
     FGUID: TGUID;
     FDependencyGUIDs: IList<TGUID>;
-    FMaterials: IList<ITerrainMaterial>;
-    FWorldGenerators: IList<IWorldGenerator>;
+    FMaterials: IObjectList<TTerrainMaterial>;
+    FWorldGenerators: IObjectList<TWorldGenerator>;
 
-    // IGamePack
-    function GetGUID: TGUID;
     function GetDependencyGUIDs: IReadonlyList<TGUID>;
-    function GetWorldGenerators: IReadonlyList<IWorldGenerator>;
-    function GetMaterials: IReadonlyList<ITerrainMaterial>;
+    function GetWorldGenerators: IReadonlyList<TWorldGenerator>;
+    function GetMaterials: IReadonlyList<TTerrainMaterial>;
 
   public
     constructor Create; overload;
     constructor Create(AGUID: TGUID); overload;
 
-    // IGamePack
-    property GUID: TGUID read GetGUID;
+    property Name: string read FName;
+    property GUID: TGUID read FGUID;
     property DependencyGUIDs: IReadonlyList<TGUID> read GetDependencyGUIDs;
 
-    property WorldGenerators: IReadonlyList<IWorldGenerator> read GetWorldGenerators;
+    property WorldGenerators: IReadonlyList<TWorldGenerator> read GetWorldGenerators;
 
-    property Materials: IReadonlyList<ITerrainMaterial> read GetMaterials;
+    property Materials: IReadonlyList<TTerrainMaterial> read GetMaterials;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
 
   end;
 
-  TGame = class(TInterfacedObject, IGame, ISerializable)
+  /// <summary>A game, consisting of multiple worlds and global game settings.</summary>
+  TGame = class(TInterfaceBase, ISerializable)
   private
     FLua: TLua;
-    FGamePacks: IList<IGamePack>;
-    FWorlds: IList<IWorld>;
-    FCore: IGamePack;
+    FGamePacks: IObjectList<TGamePack>;
+    FWorlds: IObjectList<TWorld>;
 
-    function CreateWorld: IWorld;
+    function CreateWorld: TWorld;
 
-    // IGame
-    function GetLua: TLua;
     function GetLuaState: TLuaState;
-    function GetGamePacks: IReadonlyList<IGamePack>;
-    function GetWorlds: IReadonlyList<IWorld>;
-    function GetCore: IGamePack;
+    function GetGamePacks: IReadonlyList<TGamePack>;
+    function GetWorlds: IReadonlyList<TWorld>;
 
   public
     constructor Create;
+    destructor Destroy; override;
 
-    // IGame
-    property Lua: TLua read GetLua;
+    property Lua: TLua read FLua;
     property LuaState: TLuaState read GetLuaState;
 
-    property Core: IGamePack read GetCore;
-    property GamePacks: IReadonlyList<IGamePack> read GetGamePacks;
-    procedure AddGamePack(const AGamePack: IGamePack);
+    property GamePacks: IReadonlyList<TGamePack> read GetGamePacks;
+    procedure AddGamePack(AGamePack: TGamePack);
 
-    property Worlds: IReadonlyList<IWorld> read GetWorlds;
-    function AddWorld(const AGenerator: IWorldGenerator): IWorld;
+    property Worlds: IReadonlyList<TWorld> read GetWorlds;
+    function AddWorld(AGenerator: TWorldGenerator): TWorld;
 
     // ISerializable
     procedure Serialize(ASerializer: TSerializer);
+
+  end;
+
+  // TODO: Move this
+  /// <summary>A special kind of entity, that reacts to physics.</summary>
+  TPhysicsEntity = class(TEntity, ISerializable)
+  private
+    FVelocity: TVector3;
+
+    procedure SetVelocity(const Value: TVector3);
+
+  public
+    property Velocity: TVector3 read FVelocity write SetVelocity;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer); override;
+
+  end;
+
+  /// <summary>A player entity, usually controlled by an actual player.</summary>
+  TPlayer = class(TPhysicsEntity, ISerializable)
+  private
+    FName: string;
+
+  public
+    property Name: string read FName;
+
+    // ISerializable
+    procedure Serialize(ASerializer: TSerializer); override;
 
   end;
 
@@ -538,19 +388,52 @@ implementation
 uses
   Unbound.Game.WorldFeatures, Unbound.Game.Core;
 
-{ TWorldFeature }
+{ TBlockPosition }
 
-function TWorldFeature.GetGenerator: IWorldGenerator;
+function TBlockPosition.GetWorld: TWorld;
 begin
-  Result := FGenerator;
+  Result := FWorld;
 end;
 
-constructor TWorldFeature.Create(const AGenerator: IWorldGenerator);
+function TBlockPosition.GetPosition: TIntVector3;
+begin
+  Result := FPosition;
+end;
+
+procedure TBlockPosition.SetPosition(const Value: TIntVector3);
+begin
+  FPosition := Value;
+end;
+
+function TBlockPosition.GetChunk: TChunk;
+begin
+  raise ENotImplemented.Create('TBlockPosition.GetChunk');
+end;
+
+constructor TBlockPosition.Create(AWorld: TWorld);
+begin
+  FWorld := AWorld;
+end;
+
+constructor TBlockPosition.Create(AWorld: TWorld; const APosition: TIntVector3);
+begin
+  FWorld := AWorld;
+  FPosition := APosition;
+end;
+
+procedure TBlockPosition.Serialize(ASerializer: TSerializer);
+begin
+  ASerializer.Define('Position', FPosition);
+end;
+
+{ TWorldFeature }
+
+constructor TWorldFeature.Create(AGenerator: TWorldGenerator);
 begin
   FGenerator := AGenerator;
 end;
 
-class function TWorldFeature.CreateTyped(const AGenerator: IWorldGenerator; AUBSMap: TUBSMap): IWorldFeature;
+class function TWorldFeature.CreateTyped(AGenerator: TWorldGenerator; AUBSMap: TUBSMap): TWorldFeature;
 var
   FeatureType: string;
   FeatureClass: TWorldFeatureClass;
@@ -559,6 +442,13 @@ begin
   for FeatureClass in WorldFeatureClasses do
     if FeatureClass.GetName = FeatureType then
       Exit(FeatureClass.Create(AGenerator));
+  raise EUnboundError.CreateFmt('Invalid World-Feature type: %s', [FeatureType]);
+end;
+
+destructor TWorldFeature.Destroy;
+begin
+  FGenerator.Free;
+  inherited;
 end;
 
 procedure TWorldFeature.Serialize(ASerializer: TSerializer);
@@ -568,24 +458,24 @@ end;
 
 { TWorldGenerator }
 
-function TWorldGenerator.CreateFeature(AUBSMap: TUBSMap): IWorldFeature;
+function TWorldGenerator.CreateFeature(AUBSMap: TUBSMap): TWorldFeature;
 begin
   Result := TWorldFeature.CreateTyped(Self, AUBSMap);
 end;
 
-function TWorldGenerator.GetFeatures: IReadonlyList<IWorldFeature>;
+function TWorldGenerator.GetFeatures: IReadonlyList<TWorldFeature>;
 begin
   Result := FFeatures.ReadonlyList;
 end;
 
 constructor TWorldGenerator.Create;
 begin
-  FFeatures := TList<IWorldFeature>.Create;
+  FFeatures := TObjectList<TWorldFeature>.Create;
 end;
 
-procedure TWorldGenerator.GenerateChunk(const AChunk: IChunk);
+procedure TWorldGenerator.GenerateChunk(AChunk: TChunk);
 var
-  Feature: IWorldFeature;
+  Feature: TWorldFeature;
 begin
   for Feature in Features do
     Feature.Apply(AChunk);
@@ -593,7 +483,7 @@ end;
 
 procedure TWorldGenerator.Serialize(ASerializer: TSerializer);
 begin
-  ASerializer.Define<IWorldFeature>('Features', FFeatures, CreateFeature);
+  ASerializer.Define<TWorldFeature>('Features', FFeatures, CreateFeature);
 end;
 
 { TTerrainMaterial }
@@ -610,14 +500,9 @@ begin
   Result := APos.X + Size.X * (APos.Y + Size.Y * APos.Z);
 end;
 
-function TTerrain.GetMaterials: IReadonlyList<ITerrainMaterial>;
+function TTerrain.GetMaterials: IReadonlyList<TTerrainMaterial>;
 begin
   Result := FMaterials.ReadonlyList;
-end;
-
-function TTerrain.GetSize: TIntVector3;
-begin
-  Result := FSize;
 end;
 
 function TTerrain.GetMaterialIDAt(const APos: TIntVector3): Integer;
@@ -636,17 +521,17 @@ begin
   Change;
 end;
 
-function TTerrain.GetMaterialAt(const APos: TIntVector3): ITerrainMaterial;
+function TTerrain.GetMaterialAt(const APos: TIntVector3): TTerrainMaterial;
 begin
   Result := FMaterials[MaterialIDAt[APos]];
 end;
 
-procedure TTerrain.SetMaterialAt(const APos: TIntVector3; const Value: ITerrainMaterial);
+procedure TTerrain.SetMaterialAt(const APos: TIntVector3; const Value: TTerrainMaterial);
 begin
   MaterialIDAt[APos] := GetMaterialID(Value);
 end;
 
-function TTerrain.GetOnChange: TEvent<ITerrain>.TAccess;
+function TTerrain.GetOnChange: TEvent<TTerrain>.TAccess;
 begin
   Result := FOnChange.Access;
 end;
@@ -662,7 +547,7 @@ begin
   FSize := ASize;
 end;
 
-function TTerrain.GetMaterialID(AMaterial: ITerrainMaterial): Integer;
+function TTerrain.GetMaterialID(AMaterial: TTerrainMaterial): Integer;
 begin
   Result := FMaterials.IndexOf(AMaterial);
   if Result = -1 then
@@ -695,48 +580,42 @@ begin
 
 end;
 
+{ TDesign }
+
+procedure TDesign.Serialize(ASerializer: TSerializer);
+begin
+
+end;
+
 { TChunk }
-
-function TChunk.GetSize: TIntVector3;
-begin
-  Result := World.ChunkSize;
-end;
-
-function TChunk.GetWorld: IWorld;
-begin
-  Result := FWorld;
-end;
-
-function TChunk.GetTerrain: ITerrain;
-begin
-  Result := FTerrain;
-end;
-
-function TChunk.GetChunkPos: TIntVector3;
-begin
-  Result := FChunkPos;
-end;
 
 function TChunk.GetWorldPos: TIntVector3;
 begin
   Result := FChunkPos * Size;
 end;
 
-function TChunk.GetDesign: IDesign;
+function TChunk.GetSize: TIntVector3;
 begin
-  Result := FDesign;
+  Result := World.ChunkSize;
 end;
 
-function TChunk.GetEntities: IReadonlyList<IEntity>;
+function TChunk.GetEntities: IReadonlyList<TEntity>;
 begin
   Result := FEntities.ReadonlyList;
 end;
 
-constructor TChunk.Create(const AWorld: IWorld; const AChunkPos, ASize: TIntVector3);
+constructor TChunk.Create(AWorld: TWorld; const AChunkPos, ASize: TIntVector3);
 begin
   FWorld := AWorld;
   FChunkPos := AChunkPos;
   FTerrain := TTerrain.Create(Size);
+end;
+
+destructor TChunk.Destroy;
+begin
+  FTerrain.Free;
+  FDesign.Free;
+  inherited;
 end;
 
 procedure TChunk.Serialize(ASerializer: TSerializer);
@@ -746,7 +625,7 @@ end;
 
 { TWorldLocation }
 
-function TWorldLocation.GetWorld: IWorld;
+function TWorldLocation.GetWorld: TWorld;
 begin
   Result := FWorld;
 end;
@@ -761,12 +640,12 @@ begin
   FLocation.Assign(Value);
 end;
 
-function TWorldLocation.GetChunk: IChunk;
+function TWorldLocation.GetChunk: TChunk;
 begin
   raise ENotImplemented.Create('Calculate Chunk from location.');
 end;
 
-constructor TWorldLocation.Create(const AWorld: IWorld);
+constructor TWorldLocation.Create(AWorld: TWorld);
 begin
   FWorld := AWorld;
   FLocation := TLocation3.Create;
@@ -784,6 +663,12 @@ begin
   Result.Location.Assign(Location);
 end;
 
+constructor TWorldLocation.Create(AWorld: TWorld; ALocation: TLocation3);
+begin
+  Create(AWorld);
+  FLocation.Assign(ALocation);
+end;
+
 procedure TWorldLocation.Assign(const AFrom: IWorldLocation);
 begin
   FWorld := AFrom.World;
@@ -797,39 +682,30 @@ end;
 
 { TWorld }
 
-function TWorld.CreateGenerator: IWorldGenerator;
+function TWorld.CreateGenerator: TWorldGenerator;
 begin
   Result := TWorldGenerator.Create;
 end;
 
-function TWorld.GetChunks: IReadonlyMap<TIntVector3, IChunk>;
+destructor TWorld.Destroy;
+begin
+  FGenerator.Free;
+  inherited;
+end;
+
+function TWorld.GetChunks: IReadonlyMap<TIntVector3, TChunk>;
 begin
   Result := FChunks.ReadonlyMap;
 end;
 
-function TWorld.GetChunkSize: TIntVector3;
-begin
-  Result := FChunkSize;
-end;
-
-function TWorld.GetGame: IGame;
-begin
-  Result := FGame;
-end;
-
-function TWorld.GetGenerator: IWorldGenerator;
-begin
-  Result := FGenerator;
-end;
-
-constructor TWorld.Create(const AGame: IGame);
+constructor TWorld.Create(AGame: TGame);
 begin
   FGame := AGame;
-  FChunks := TMap<TIntVector3, IChunk>.Create;
+  FChunks := TToObjectMap<TIntVector3, TChunk>.Create;
   FChunkSize := DefaultChunkSize;
 end;
 
-constructor TWorld.Create(const AGame: IGame; const AGenerator: IWorldGenerator);
+constructor TWorld.Create(AGame: TGame; AGenerator: TWorldGenerator);
 begin
   Create(AGame);
   FGenerator := AGenerator;
@@ -837,20 +713,10 @@ end;
 
 procedure TWorld.Serialize(ASerializer: TSerializer);
 begin
-  ASerializer.Define<IWorldGenerator>('Generator', FGenerator, CreateGenerator);
+  ASerializer.Define<TWorldGenerator>('Generator', FGenerator, CreateGenerator);
 end;
 
 { TEntity }
-
-function TEntity.GetGUID: TGUID;
-begin
-  Result := FGUID;
-end;
-
-function TEntity.GetLocation: IWorldLocation;
-begin
-  Result := FLocation;
-end;
 
 procedure TEntity.SetLocation(const Value: IWorldLocation);
 begin
@@ -870,11 +736,6 @@ end;
 
 { TPhysicsEntity }
 
-function TPhysicsEntity.GetVelocity: TVector3;
-begin
-  Result := FVelocity;
-end;
-
 procedure TPhysicsEntity.SetVelocity(const Value: TVector3);
 begin
   FVelocity := Value;
@@ -887,11 +748,6 @@ begin
 end;
 
 { TPlayer }
-
-function TPlayer.GetName: string;
-begin
-  Result := FName;
-end;
 
 procedure TPlayer.Serialize(ASerializer: TSerializer);
 begin
@@ -906,17 +762,12 @@ begin
   Result := FDependencyGUIDs.ReadonlyList;
 end;
 
-function TGamePack.GetGUID: TGUID;
-begin
-  Result := FGUID;
-end;
-
-function TGamePack.GetMaterials: IReadonlyList<ITerrainMaterial>;
+function TGamePack.GetMaterials: IReadonlyList<TTerrainMaterial>;
 begin
   Result := FMaterials.ReadonlyList;
 end;
 
-function TGamePack.GetWorldGenerators: IReadonlyList<IWorldGenerator>;
+function TGamePack.GetWorldGenerators: IReadonlyList<TWorldGenerator>;
 begin
   Result := FWorldGenerators.ReadonlyList;
 end;
@@ -929,35 +780,36 @@ end;
 constructor TGamePack.Create(AGUID: TGUID);
 begin
   FGUID := AGUID;
-  FMaterials := TList<ITerrainMaterial>.Create;
-  FWorldGenerators := TList<IWorldGenerator>.Create;
+  FDependencyGUIDs := TList<TGUID>.Create;
+  FMaterials := TObjectList<TTerrainMaterial>.Create;
+  FWorldGenerators := TObjectList<TWorldGenerator>.Create;
 end;
 
 procedure TGamePack.Serialize(ASerializer: TSerializer);
 begin
+  ASerializer.Define('Name', FName);
   ASerializer.Define('GUID', FGUID);
+  ASerializer.Define('DependencyGUIDs', FDependencyGUIDs);
+  ASerializer.Define<TTerrainMaterial>('Materials', FMaterials);
+  ASerializer.Define<TWorldGenerator>('WorldGenerators', FWorldGenerators);
 end;
 
 { TGame }
 
-function TGame.CreateWorld: IWorld;
+function TGame.CreateWorld: TWorld;
 begin
   Result := TWorld.Create(Self);
 end;
 
-function TGame.GetCore: IGamePack;
+destructor TGame.Destroy;
 begin
-  Result := FCore;
+  FLua.Free;
+  inherited;
 end;
 
-function TGame.GetGamePacks: IReadonlyList<IGamePack>;
+function TGame.GetGamePacks: IReadonlyList<TGamePack>;
 begin
   Result := FGamePacks.ReadonlyList;
-end;
-
-function TGame.GetLua: TLua;
-begin
-  Result := FLua;
 end;
 
 function TGame.GetLuaState: TLuaState;
@@ -965,7 +817,7 @@ begin
   Result := FLua.L;
 end;
 
-function TGame.GetWorlds: IReadonlyList<IWorld>;
+function TGame.GetWorlds: IReadonlyList<TWorld>;
 begin
   Result := FWorlds.ReadonlyList;
 end;
@@ -973,22 +825,20 @@ end;
 constructor TGame.Create;
 begin
   FLua := TLua.Create;
-  FGamePacks := TList<IGamePack>.Create;
-  FWorlds := TList<IWorld>.Create;
-  FCore := TGamePackCore.Create;
-  AddGamePack(FCore);
+  FGamePacks := TObjectList<TGamePack>.Create;
+  FWorlds := TObjectList<TWorld>.Create;
 end;
 
-procedure TGame.AddGamePack(const AGamePack: IGamePack);
+procedure TGame.AddGamePack(AGamePack: TGamePack);
 var
-  Generator: IWorldGenerator;
+  Generator: TWorldGenerator;
 begin
   FGamePacks.Add(AGamePack);
   for Generator in AGamePack.WorldGenerators do
     AddWorld(Generator);
 end;
 
-function TGame.AddWorld(const AGenerator: IWorldGenerator): IWorld;
+function TGame.AddWorld(AGenerator: TWorldGenerator): TWorld;
 begin
   Result := TWorld.Create(Self, AGenerator);
   FWorlds.Add(Result);
@@ -996,7 +846,7 @@ end;
 
 procedure TGame.Serialize(ASerializer: TSerializer);
 begin
-  ASerializer.Define<IWorld>('Worlds', FWorlds, CreateWorld);
+  ASerializer.Define<TWorld>('Worlds', FWorlds, CreateWorld);
 end;
 
 end.
