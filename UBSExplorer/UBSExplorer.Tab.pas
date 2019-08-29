@@ -89,12 +89,12 @@ var
   Value: TUBSValue;
 begin
   case AUBSValue.GetTag of
-    ubsMap:
+    utMap:
       begin
         for Pair in TUBSMap(AUBSValue).Order do
         begin
           case Pair.Value.GetTag of
-            ubsMap, ubsList:
+            utMap, utList:
               begin
                 Node := tvExplorer.Items.AddChild(AParent,
                   Format('%s: %s', [Pair.Key, Pair.Value.GetTagName])) as TUBSTreeNode;
@@ -109,13 +109,13 @@ begin
           Node.SelectedIndex := Node.ImageIndex;
         end;
       end;
-    ubsList:
+    utList:
       begin
         for I := 0 to TUBSList(AUBSValue).Items.MaxIndex do
         begin
           Value := TUBSList(AUBSValue).Items[I];
           case Value.GetTag of
-            ubsMap, ubsList:
+            utMap, utList:
               begin
                 Node := tvExplorer.Items.AddChildObject(AParent,
                   Format('[%d] %s', [I, Value.GetTagName]), Value) as TUBSTreeNode;

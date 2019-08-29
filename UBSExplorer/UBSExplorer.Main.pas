@@ -197,12 +197,12 @@ end;
 
 procedure TfrmMain.actNewListExecute(Sender: TObject);
 begin
-  OpenNew(ubsList);
+  OpenNew(utList);
 end;
 
 procedure TfrmMain.actNewMapExecute(Sender: TObject);
 begin
-  OpenNew(ubsMap);
+  OpenNew(utMap);
 end;
 
 procedure TfrmMain.actOpenExecute(Sender: TObject);
