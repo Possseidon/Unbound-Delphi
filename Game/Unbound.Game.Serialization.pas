@@ -31,39 +31,39 @@ type
 
   TUBSTag = (
     // Nil type
-    ubsNil,
+    utNil,
 
     // Basic/Nested structures
-    ubsMap,
-    ubsList,
+    utMap,
+    utList,
 
     // Common Primitives
-    ubsInteger,
-    ubsSingle,
-    ubsBoolean,
-    ubsString,
-    ubsByteArray,
+    utInteger,
+    utSingle,
+    utBoolean,
+    utString,
+    utByteArray,
 
     // Utility
-    ubsGUID,
+    utGUID,
 
     // Integer math
-    ubsIntBounds1,
-    ubsIntBounds2,
-    ubsIntBounds3,
-    ubsIntVector2,
-    ubsIntVector3,
+    utIntBounds1,
+    utIntBounds2,
+    utIntBounds3,
+    utIntVector2,
+    utIntVector3,
 
     // Vector math
-    ubsBounds1,
-    ubsBounds2,
-    ubsBounds3,
-    ubsVector2,
-    ubsVector3,
+    utBounds1,
+    utBounds2,
+    utBounds3,
+    utVector2,
+    utVector3,
 
     // Color
-    ubsColorRGB,
-    ubsColorRGBA
+    utColorRGB,
+    utColorRGBA
     );
 
   TUBSClass = class of TUBSValue;
@@ -602,7 +602,7 @@ end;
 
 class function TUBSNil.GetTag: TUBSTag;
 begin
-  Result := ubsNil;
+  Result := utNil;
 end;
 
 procedure TUBSNil.LoadInternal(AReader: TBinaryReader);
@@ -711,7 +711,7 @@ end;
 
 class function TUBSMap.GetTag: TUBSTag;
 begin
-  Result := ubsMap;
+  Result := utMap;
 end;
 
 { IUBSList }
@@ -777,7 +777,7 @@ end;
 
 class function TUBSList.GetTag: TUBSTag;
 begin
-  Result := ubsList;
+  Result := utList;
 end;
 
 procedure TUBSList.Add(AValue: TUBSValue);
@@ -804,7 +804,7 @@ end;
 
 class function TUBSInteger.GetTag: TUBSTag;
 begin
-  Result := ubsInteger;
+  Result := utInteger;
 end;
 
 { TUBSSingle }
@@ -818,7 +818,7 @@ end;
 
 class function TUBSSingle.GetTag: TUBSTag;
 begin
-  Result := ubsSingle;
+  Result := utSingle;
 end;
 
 { TUBSBoolean }
@@ -830,7 +830,7 @@ end;
 
 class function TUBSBoolean.GetTag: TUBSTag;
 begin
-  Result := ubsBoolean;
+  Result := utBoolean;
 end;
 
 { TUBSString }
@@ -852,7 +852,7 @@ end;
 
 class function TUBSString.GetTag: TUBSTag;
 begin
-  Result := ubsString;
+  Result := utString;
 end;
 
 { TUBSByteArray }
@@ -884,7 +884,7 @@ end;
 
 class function TUBSByteArray.GetTag: TUBSTag;
 begin
-  Result := ubsByteArray;
+  Result := utByteArray;
 end;
 
 { TUBSGUID }
@@ -901,7 +901,7 @@ end;
 
 class function TUBSGUID.GetTag: TUBSTag;
 begin
-  Result := ubsGUID;
+  Result := utGUID;
 end;
 
 { TUBSIntBounds1 }
@@ -919,7 +919,7 @@ end;
 
 class function TUBSIntBounds1.GetTag: TUBSTag;
 begin
-  Result := ubsIntBounds1;
+  Result := utIntBounds1;
 end;
 
 { TUBSIntBounds2 }
@@ -945,7 +945,7 @@ end;
 
 class function TUBSIntBounds2.GetTag: TUBSTag;
 begin
-  Result := ubsIntBounds2;
+  Result := utIntBounds2;
 end;
 
 { TUBSIntBounds3 }
@@ -979,7 +979,7 @@ end;
 
 class function TUBSIntBounds3.GetTag: TUBSTag;
 begin
-  Result := ubsIntBounds3;
+  Result := utIntBounds3;
 end;
 
 { TUBSIntVector2 }
@@ -997,7 +997,7 @@ end;
 
 class function TUBSIntVector2.GetTag: TUBSTag;
 begin
-  Result := ubsIntVector2;
+  Result := utIntVector2;
 end;
 
 { TUBSIntVector3 }
@@ -1019,7 +1019,7 @@ end;
 
 class function TUBSIntVector3.GetTag: TUBSTag;
 begin
-  Result := ubsIntVector3;
+  Result := utIntVector3;
 end;
 
 { TUBSBounds1 }
@@ -1037,7 +1037,7 @@ end;
 
 class function TUBSBounds1.GetTag: TUBSTag;
 begin
-  Result := ubsBounds1;
+  Result := utBounds1;
 end;
 
 { TUBSBounds2 }
@@ -1063,7 +1063,7 @@ end;
 
 class function TUBSBounds2.GetTag: TUBSTag;
 begin
-  Result := ubsBounds2;
+  Result := utBounds2;
 end;
 
 { TUBSBounds3 }
@@ -1097,7 +1097,7 @@ end;
 
 class function TUBSBounds3.GetTag: TUBSTag;
 begin
-  Result := ubsBounds3;
+  Result := utBounds3;
 end;
 
 { TUBSVector2 }
@@ -1115,7 +1115,7 @@ end;
 
 class function TUBSVector2.GetTag: TUBSTag;
 begin
-  Result := ubsVector2;
+  Result := utVector2;
 end;
 
 { TUBSVector3 }
@@ -1137,7 +1137,7 @@ end;
 
 class function TUBSVector3.GetTag: TUBSTag;
 begin
-  Result := ubsVector3;
+  Result := utVector3;
 end;
 
 { TUBSColorRGB }
@@ -1159,7 +1159,7 @@ end;
 
 class function TUBSColorRGB.GetTag: TUBSTag;
 begin
-  Result := ubsColorRGB;
+  Result := utColorRGB;
 end;
 
 { TUBSColorRGBA }
@@ -1185,7 +1185,7 @@ end;
 
 class function TUBSColorRGBA.GetTag: TUBSTag;
 begin
-  Result := ubsColorRGBA;
+  Result := utColorRGBA;
 end;
 
 { TSerializer }
@@ -1245,16 +1245,16 @@ end;
 
 procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<TUBSMap, T>);
 var
-  ubsMap: TUBSMap;
+  utMap: TUBSMap;
 begin
   case Mode of
     smSerialize:
       Value[AName] := Serialize(ASerializable);
     smUnserialize:
       begin
-        ubsMap := Value[AName].Cast<TUBSMap>;
-        ASerializable := AInstantiator(ubsMap);
-        Unserialize(ASerializable, ubsMap);
+        utMap := Value[AName].Cast<TUBSMap>;
+        ASerializable := AInstantiator(utMap);
+        Unserialize(ASerializable, utMap);
       end;
   end;
 end;
@@ -1292,7 +1292,7 @@ var
   List: TUBSList;
   Item: T;
   UBSValue: TUBSValue;
-  ubsMap: TUBSMap;
+  utMap: TUBSMap;
 begin
   case Mode of
     smSerialize:
@@ -1307,9 +1307,9 @@ begin
         ACollection.Clear;
         for UBSValue in Value[AName].Cast<TUBSList> do
         begin
-          ubsMap := UBSValue.Cast<TUBSMap>;
-          Item := AInstantiator(ubsMap);
-          Unserialize(Item, ubsMap);
+          utMap := UBSValue.Cast<TUBSMap>;
+          Item := AInstantiator(utMap);
+          Unserialize(Item, utMap);
           ACollection.Add(Item);
         end;
       end;

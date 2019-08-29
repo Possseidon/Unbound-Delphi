@@ -170,8 +170,6 @@
         <DCCReference Include="GameStates\Unbound.GameState.Loading.pas"/>
         <DCCReference Include="GameStates\Unbound.GameState.Playing.pas"/>
         <DCCReference Include="Game\Unbound.Game.Renderer.pas"/>
-        <DCCReference Include="Game\Unbound.Game.Vanilla.pas"/>
-        <DCCReference Include="Game\Unbound.Game.Core.pas"/>
         <RcItem Include="Data\Shader\design.fs">
             <ContainerId>ResourceItem</ContainerId>
             <ResourceType>RCDATA</ResourceType>
@@ -248,13 +246,13 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Data\Shader\skybox.fs" Configuration="Debug" Class="ProjectFile">
+                <DeployFile LocalName="Data\Shader\design.fs" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Data\Shader\design.fs" Configuration="Debug" Class="ProjectFile">
+                <DeployFile LocalName="Data\Shader\skybox.fs" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>

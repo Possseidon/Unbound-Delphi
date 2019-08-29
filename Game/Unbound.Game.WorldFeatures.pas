@@ -11,7 +11,7 @@ type
 
   TWorldFeatureTerrain = class(TWorldFeature)
   protected
-    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); virtual; abstract;
+    procedure CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3); virtual; abstract;
 
   public
     procedure Apply(AChunk: TChunk); override;
@@ -20,7 +20,7 @@ type
 
   TWorldFeatureHeightmap = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -29,7 +29,7 @@ type
 
   TWorldFeatureNoise = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -38,7 +38,7 @@ type
 
   TWorldFeatureStructure = class(TWorldFeatureTerrain)
   protected
-    procedure CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3); override;
+    procedure CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3); override;
 
   public
     class function GetName: string; override;
@@ -59,18 +59,23 @@ implementation
 
 procedure TWorldFeatureTerrain.Apply(AChunk: TChunk);
 var
-  X, Y, Z: Integer;
+  X, Y, Z, SX, SY, SZ: Integer;
+  Terrain: TTerrain;
 begin
   // Use nested loop for better performance
-  for X := 0 to AChunk.Size.X do
-    for Y := 0 to AChunk.Size.X do
-      for Z := 0 to AChunk.Size.X do
-        CalculateBlock(AChunk, IVec3(X, Y, Z));
+  SX := AChunk.Size.X;
+  SY := AChunk.Size.Y;
+  SZ := AChunk.Size.Z;
+  Terrain := AChunk.Terrain;
+  for X := 0 to SX do
+    for Y := 0 to SY do
+      for Z := 0 to SZ do
+        CalculateBlock(Terrain, IVec3(X, Y, Z));
 end;
 
 { TWorldFeatureHeightmap }
 
-procedure TWorldFeatureHeightmap.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureHeightmap.CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3);
 begin
 
 end;
@@ -82,7 +87,7 @@ end;
 
 { TWorldFeatureNoise }
 
-procedure TWorldFeatureNoise.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureNoise.CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3);
 begin
 
 end;
@@ -94,7 +99,7 @@ end;
 
 { TWorldFeatureStructure }
 
-procedure TWorldFeatureStructure.CalculateBlock(AChunk: TChunk; const AChunkPos: TIntVector3);
+procedure TWorldFeatureStructure.CalculateBlock(ATerrain: TTerrain; const AChunkPos: TIntVector3);
 begin
 
 end;

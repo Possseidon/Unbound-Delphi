@@ -29,8 +29,9 @@ type
     FTerrainVAO: TVAOMutable<TTerrainShader.TData>;
     FTerrainChangeSubscription: IEventSubscription;
 
-    procedure TerrainChanged;
     procedure BuildTerrainVAO;
+
+    procedure TerrainChange;
 
   public
     constructor Create(AGLState: TGLState; AChunk: TChunk);
@@ -115,7 +116,8 @@ begin
   FChunk := AChunk;
   FTerrainShader := TTerrainShader.Get(AGLState);
   FTerrainVAO := TVAOMutable<TTerrainShader.TData>.Create(FTerrainShader.Data);
-  FTerrainChangeSubscription := AChunk.Terrain.OnChange.Subscribe(TerrainChanged);
+  FTerrainChangeSubscription := AChunk.Terrain.OnChange.Subscribe(TerrainChange);
+  FTerrainChanged := True;
 end;
 
 procedure TChunkRenderable.Render;
@@ -125,7 +127,7 @@ begin
   FTerrainVAO.Render;
 end;
 
-procedure TChunkRenderable.TerrainChanged;
+procedure TChunkRenderable.TerrainChange;
 begin
   FTerrainChanged := True;
 end;

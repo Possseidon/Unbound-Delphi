@@ -15,9 +15,7 @@ uses
   Unbound.GameState.MainMenu in 'GameStates\Unbound.GameState.MainMenu.pas',
   Unbound.GameState.Loading in 'GameStates\Unbound.GameState.Loading.pas',
   Unbound.GameState.Playing in 'GameStates\Unbound.GameState.Playing.pas',
-  Unbound.Game.Renderer in 'Game\Unbound.Game.Renderer.pas',
-  Unbound.Game.Vanilla in 'Game\Unbound.Game.Vanilla.pas',
-  Unbound.Game.Core in 'Game\Unbound.Game.Core.pas';
+  Unbound.Game.Renderer in 'Game\Unbound.Game.Renderer.pas';
 
 {$R *.res}
 
