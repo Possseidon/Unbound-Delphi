@@ -8,7 +8,8 @@ uses
   Unbound.GameState,
   Unbound.Game,
   Unbound.Game.Renderer,
-  Unbound.Game.Serialization;
+  Unbound.Game.Serialization,
+  Unbound.Game.WorldFeatures;
 
 type
 
@@ -36,27 +37,43 @@ var
   UBSMap: TUBSMap;
   Material: TTerrainMaterialEditable;
   WorldGenerator: TWorldGeneratorEditable;
+  Feature: TWorldFeatureHeightmapEditable;
+  Noise: TNoise2Editable;
 begin
-  TestGamePack := TGamePackEditable.Create;
-  TestGamePack.Rename('Test');
-  TestGamePack.GenerateNewGUID;
-
   Material := TTerrainMaterialEditable.Create;
-  Material.Recolor(ColorRGB(1, 0, 1));
-  TestGamePack.AddMaterial(Material);
-  Material.Free;
+  Material.SetColor(ColorRGB(1, 0, 1));
+
+  Noise := TNoise2Editable.Create;
+  Noise.SetSeed(42);
+
+  Feature := TWorldFeatureHeightmapEditable.Create;
+  Feature.AddNoise(Noise);
 
   WorldGenerator := TWorldGeneratorEditable.Create;
-  // WorldGenerator.AddFeature();
+  WorldGenerator.AddFeature(Feature);
+
+  TestGamePack := TGamePackEditable.Create;
+  TestGamePack.SetName('Test');
+  TestGamePack.GenerateNewGUID;
+  TestGamePack.AddMaterial(Material);
   TestGamePack.AddWorldGenerator(WorldGenerator);
-  WorldGenerator.Free;
 
   FGame := TGame.Create;
   FGame.AddGamePack(TestGamePack);
+
+  WorldGenerator.Free;
+  Feature.Free;
+  Material.Free;
+  Noise.Free;
   TestGamePack.Free;
 
   UBSMap := TSerializer.Serialize(FGame);
   UBSMap.SaveToFile('TestGame.ubs');
+
+  FGame.Free;
+  FGame := TGame.Create;
+  TSerializer.Unserialize(FGame, UBSMap);
+
   UBSMap.Free;
 
   FRenderer := TGameRenderer.Create(FGame);

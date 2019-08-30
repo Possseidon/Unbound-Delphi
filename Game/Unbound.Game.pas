@@ -121,7 +121,7 @@ type
 
   TTerrainMaterialEditable = class(TTerrainMaterial)
   public
-    procedure Recolor(AColor: TColorRGBA);
+    procedure SetColor(AColor: TColorRGBA);
 
   end;
 
@@ -229,25 +229,19 @@ type
 
   /// <summary>A feature, that generates a chunk via the "Apply" method.</summary>
   TWorldFeature = class(TInterfaceBase, ISerializable)
-  private
-    FGenerator: TWorldGenerator;
-
   protected
-    procedure Assign(AFrom: TWorldGenerator); virtual; abstract;
+    procedure Assign(AFrom: TWorldFeature); virtual; abstract;
     
   public
-    constructor Create(AGenerator: TWorldGenerator); virtual;
-    destructor Destroy; override;
+    constructor Create; virtual;
 
-    class function CreateSame(AGenerator: TWorldGenerator): TWorldFeature;
-    function Copy(AGenerator: TWorldGenerator): TWorldFeature;
-    
-    class function CreateTyped(AGenerator: TWorldGenerator; AUBSMap: TUBSMap): TWorldFeature;
+    class function CreateSame: TWorldFeature;
+    function Copy: TWorldFeature;
+
+    class function CreateTyped(AUBSMap: TUBSMap): TWorldFeature;
     class function GetName: string; virtual; abstract;
 
-    property Generator: TWorldGenerator read FGenerator;
-
-    procedure Serialize(ASerializer: TSerializer);
+    procedure Serialize(ASerializer: TSerializer); virtual;
 
     procedure Apply(AChunk: TChunk); virtual; abstract;
 
@@ -296,14 +290,11 @@ type
     FChunks: IToObjectMap<TIntVector3, TChunk>;
     FChunkSize: TIntVector3;
 
-    function CreateGenerator: TWorldGenerator;
-
     function GetChunks: IReadonlyMap<TIntVector3, TChunk>;
 
   public
     constructor Create(AGame: TGame); overload;
     constructor Create(AGame: TGame; AGenerator: TWorldGenerator); overload;
-    destructor Destroy; override;
 
     property Game: TGame read FGame;
     property Generator: TWorldGenerator read FGenerator;
@@ -350,7 +341,7 @@ type
   /// <summary>An editable version of TGamePack, which can be edited without the means of serialization.</summary>
   TGamePackEditable = class(TGamePack)
   public
-    procedure Rename(AName: string);
+    procedure SetName(AName: string);
     procedure GenerateNewGUID;
 
     procedure AddDependency(AGamePack: TGamePack);
@@ -469,23 +460,23 @@ end;
 
 { TWorldFeature }
 
-function TWorldFeature.Copy(AGenerator: TWorldGenerator): TWorldFeature;
+function TWorldFeature.Copy: TWorldFeature;
 begin
-  Result := CreateSame(AGenerator);
-  Result.Assign(AGenerator);
+  Result := CreateSame;
+  Result.Assign(Self);
 end;
 
-constructor TWorldFeature.Create(AGenerator: TWorldGenerator);
+constructor TWorldFeature.Create;
 begin
-  FGenerator := AGenerator;
+  // nothing
 end;
 
-class function TWorldFeature.CreateSame(AGenerator: TWorldGenerator): TWorldFeature;
+class function TWorldFeature.CreateSame: TWorldFeature;
 begin
-  Result := Create(AGenerator);
+  Result := Create;
 end;
 
-class function TWorldFeature.CreateTyped(AGenerator: TWorldGenerator; AUBSMap: TUBSMap): TWorldFeature;
+class function TWorldFeature.CreateTyped(AUBSMap: TUBSMap): TWorldFeature;
 var
   FeatureType: string;
   FeatureClass: TWorldFeatureClass;
@@ -493,14 +484,8 @@ begin
   FeatureType := AUBSMap['FeatureType'].Cast<TUBSString>.Value;
   for FeatureClass in WorldFeatureClasses do
     if FeatureClass.GetName = FeatureType then
-      Exit(FeatureClass.Create(AGenerator));
+      Exit(FeatureClass.Create);
   raise EUnboundError.CreateFmt('Invalid World-Feature type: %s', [FeatureType]);
-end;
-
-destructor TWorldFeature.Destroy;
-begin
-  FGenerator.Free;
-  inherited;
 end;
 
 procedure TWorldFeature.Serialize(ASerializer: TSerializer);
@@ -512,7 +497,7 @@ end;
 
 function TWorldGenerator.CreateFeature(AUBSMap: TUBSMap): TWorldFeature;
 begin
-  Result := TWorldFeature.CreateTyped(Self, AUBSMap);
+  Result := TWorldFeature.CreateTyped(AUBSMap);
 end;
 
 function TWorldGenerator.GetFeatures: IReadonlyList<TWorldFeature>;
@@ -531,7 +516,7 @@ var
 begin
   Result := TWorldGenerator.Create;
   for Feature in Features do
-    Result.FFeatures.Add(Feature.Copy(Result));
+    Result.FFeatures.Add(Feature.Copy);
 end;
 
 procedure TWorldGenerator.GenerateChunk(AChunk: TChunk);
@@ -749,17 +734,6 @@ end;
 
 { TWorld }
 
-function TWorld.CreateGenerator: TWorldGenerator;
-begin
-  Result := TWorldGenerator.Create;
-end;
-
-destructor TWorld.Destroy;
-begin
-  FGenerator.Free;
-  inherited;
-end;
-
 function TWorld.GetChunks: IReadonlyMap<TIntVector3, TChunk>;
 begin
   Result := FChunks.ReadonlyMap;
@@ -780,7 +754,8 @@ end;
 
 procedure TWorld.Serialize(ASerializer: TSerializer);
 begin
-  ASerializer.Define<TWorldGenerator>('Generator', FGenerator, CreateGenerator);
+  // TODO: Reference stuff, see other comment, use Generator reference from GamePack
+  // ASerializer.Define('Generator', FGenerator, CreateGenerator);
 end;
 
 { TEntity }
@@ -872,7 +847,7 @@ end;
 
 { TGamePackEditable }
 
-procedure TGamePackEditable.Rename(AName: string);
+procedure TGamePackEditable.SetName(AName: string);
 begin
   FName := AName;
 end;
@@ -971,7 +946,7 @@ end;
 
 { TTerrainMaterialEditable }
 
-procedure TTerrainMaterialEditable.Recolor(AColor: TColorRGBA);
+procedure TTerrainMaterialEditable.SetColor(AColor: TColorRGBA);
 begin
   FColor := AColor;
 end;
@@ -980,7 +955,7 @@ end;
 
 procedure TWorldGeneratorEditable.AddFeature(AFeature: TWorldFeature);
 begin
-  FFeatures.Add(AFeature.Copy(Self));
+  FFeatures.Add(AFeature.Copy);
 end;
 
 procedure TWorldGeneratorEditable.RemoveFeature(AFeature: TWorldFeature);

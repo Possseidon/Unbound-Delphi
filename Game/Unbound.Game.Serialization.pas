@@ -455,7 +455,7 @@ type
     procedure Define(const AName: string; var AValue: string); overload;
 
     procedure Define(const AName: string; var AValue: TGUID); overload;
-    procedure Define(const AName: string; ACollection: ICollection<TGUID>); overload;
+    procedure Define(const AName: string; const ACollection: ICollection<TGUID>); overload;
 
     procedure Define(const AName: string; var AValue: TIntBounds1); overload;
     procedure Define(const AName: string; var AValue: TIntBounds2); overload;
