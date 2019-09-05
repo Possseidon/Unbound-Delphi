@@ -67,15 +67,6 @@ begin
   Noise.Free;
   TestGamePack.Free;
 
-  UBSMap := TSerializer.Serialize(FGame);
-  UBSMap.SaveToFile('TestGame.ubs');
-
-  FGame.Free;
-  FGame := TGame.Create;
-  TSerializer.Unserialize(FGame, UBSMap);
-
-  UBSMap.Free;
-
   FRenderer := TGameRenderer.Create(FGame);
 end;
 

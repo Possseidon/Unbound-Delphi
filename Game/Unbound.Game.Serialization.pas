@@ -17,6 +17,9 @@ uses
 
 type
 
+  // TODO: Don't create a new serializer object for nested types
+  // -     Use the existing one and keep a stack of UBSParents
+
   TBinaryWriterHelper = class helper for TBinaryWriter
     procedure Write7BitEncodedInt(Value: Integer);
 
@@ -71,7 +74,8 @@ type
   TUBSValue = class
   public const
 
-    BinaryFileSignature: array [0 .. 3] of Byte = (27, Ord('U'), Ord('B'), Ord('S'));
+    // BinaryFileSignature: array [0 .. 3] of Byte = (27, Ord('U'), Ord('B'), Ord('S'));
+    BinaryFileSignature: array [0 .. 3] of AnsiChar = #27'UBS';
 
   public type
 
@@ -1215,7 +1219,6 @@ begin
   try
     ASerializable.Serialize(Serializer);
   finally
-    Serializer.FValue.Free;
     Serializer.Free;
   end;
 end;
@@ -1245,16 +1248,16 @@ end;
 
 procedure TSerializer.Define<T>(const AName: string; var ASerializable: T; const AInstantiator: TFunc<TUBSMap, T>);
 var
-  utMap: TUBSMap;
+  UBSMap: TUBSMap;
 begin
   case Mode of
     smSerialize:
       Value[AName] := Serialize(ASerializable);
     smUnserialize:
       begin
-        utMap := Value[AName].Cast<TUBSMap>;
-        ASerializable := AInstantiator(utMap);
-        Unserialize(ASerializable, utMap);
+        UBSMap := Value[AName].Cast<TUBSMap>;
+        ASerializable := AInstantiator(UBSMap);
+        Unserialize(ASerializable, UBSMap);
       end;
   end;
 end;
@@ -1292,7 +1295,7 @@ var
   List: TUBSList;
   Item: T;
   UBSValue: TUBSValue;
-  utMap: TUBSMap;
+  UBSMap: TUBSMap;
 begin
   case Mode of
     smSerialize:
@@ -1307,9 +1310,9 @@ begin
         ACollection.Clear;
         for UBSValue in Value[AName].Cast<TUBSList> do
         begin
-          utMap := UBSValue.Cast<TUBSMap>;
-          Item := AInstantiator(utMap);
-          Unserialize(Item, utMap);
+          UBSMap := UBSValue.Cast<TUBSMap>;
+          Item := AInstantiator(UBSMap);
+          Unserialize(Item, UBSMap);
           ACollection.Add(Item);
         end;
       end;
@@ -1495,7 +1498,7 @@ begin
   end;
 end;
 
-procedure TSerializer.Define(const AName: string; ACollection: ICollection<TGUID>);
+procedure TSerializer.Define(const AName: string; const ACollection: ICollection<TGUID>);
 var
   List: TUBSList;
   GUID: TGUID;

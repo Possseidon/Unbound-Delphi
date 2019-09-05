@@ -150,8 +150,8 @@ implementation
 
 {$R *.dfm}
 
-
-uses UBSExplorer.EditValueDialog;
+uses
+  UBSExplorer.EditValueDialog;
 
 procedure TfrmMain.actCloseExecute(Sender: TObject);
 begin
@@ -264,7 +264,7 @@ begin
   ActionEnabled := False;
   for I := 0 to pcTabs.PageCount - 1 do
   begin
-    if not (pcTabs.Pages[I].Controls[0] as TfrmTab).Saved then
+    if not(pcTabs.Pages[I].Controls[0] as TfrmTab).Saved then
       ActionEnabled := True;
   end;
   actSaveAll.Enabled := ActionEnabled;
