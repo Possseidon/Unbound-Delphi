@@ -12,8 +12,8 @@ object frmTab: TfrmTab
     Align = alClient
     Images = dmData.ilIcons
     Indent = 19
-    ReadOnly = True
     TabOrder = 0
     OnCreateNodeClass = tvExplorerCreateNodeClass
+    OnEditing = tvExplorerEditing
   end
 end

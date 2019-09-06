@@ -20,16 +20,6 @@ type
   // TODO: Don't create a new serializer object for nested types
   // -     Use the existing one and keep a stack of UBSParents
 
-  TBinaryWriterHelper = class helper for TBinaryWriter
-    procedure Write7BitEncodedInt(Value: Integer);
-
-  end;
-
-  TBinaryReaderHelper = class helper for TBinaryReader
-    function Read7BitEncodedInt: Integer;
-
-  end;
-
   EUBSError = class(Exception);
 
   TUBSTag = (
@@ -140,6 +130,7 @@ type
 
   public
     constructor Create; virtual;
+    class function CreateTyped(ATag: TUBSTag): TUBSValue; static;
 
     class function GetTag: TUBSTag; virtual; abstract;
     class function GetTagName: string;
@@ -170,7 +161,9 @@ type
 
   end;
 
-  TUBSMap = class(TUBSValue)
+  TUBSParent = class(TUBSValue);
+
+  TUBSMap = class(TUBSParent)
   private
     FMap: IToObjectMap<string, TUBSValue>;
     FOrder: IList<TPair<string, TUBSValue>>;
@@ -199,9 +192,14 @@ type
 
     property Items[AKey: string]: TUBSValue read GetItem write SetItem; default;
 
+    procedure Remove(AKey: string);
+    function Extract(AKey: string): TUBSValue;
+
+    function GetEnumerator: IIterator<TPair<string, TUBSValue>>;
+
   end;
 
-  TUBSList = class(TUBSValue)
+  TUBSList = class(TUBSParent)
   private
     FItems: IObjectList<TUBSValue>;
 
@@ -223,8 +221,13 @@ type
 
     property Count: Integer read GetCount;
     property Items: IReadonlyList<TUBSValue> read GetItems;
+
     property Values[AIndex: Integer]: TUBSValue read GetItem write SetItem; default;
     procedure Add(AValue: TUBSValue);
+
+    procedure Remove(AValue: TUBSValue);
+    procedure RemoveAt(AIndex: Integer);
+    function Extract(AIndex: Integer): TUBSValue;
 
     function GetEnumerator: IIterator<TUBSValue>;
 
@@ -583,6 +586,18 @@ const
 
 implementation
 
+type
+
+  TBinaryWriterHelper = class helper for TBinaryWriter
+    procedure Write7BitEncodedInt(Value: Integer);
+
+  end;
+
+  TBinaryReaderHelper = class helper for TBinaryReader
+    function Read7BitEncodedInt: Integer;
+
+  end;
+
 { TBinaryWriterHelper }
 
 procedure TBinaryWriterHelper.Write7BitEncodedInt(Value: Integer);
@@ -636,6 +651,11 @@ begin
   Result := Map.Count;
 end;
 
+function TUBSMap.GetEnumerator: IIterator<TPair<string, TUBSValue>>;
+begin
+  Result := FOrder.GetEnumerator;
+end;
+
 function TUBSMap.GetItem(AKey: string): TUBSValue;
 begin
   Result := FMap[AKey];
@@ -647,6 +667,19 @@ begin
     raise EUBSError.Create('UBS-Key exists already.');
   FMap[AKey] := Value;
   FOrder.Add(TPair<string, TUBSValue>.Create(AKey, Value));
+end;
+
+function TUBSMap.Extract(AKey: string): TUBSValue;
+var
+  I: Integer;
+begin
+  Result := FMap.Extract(AKey);
+  for I := 0 to FOrder.MaxIndex do
+    if FOrder[I].Value = Result then
+    begin
+      FOrder.RemoveAt(I);
+      Break;
+    end;
 end;
 
 procedure TUBSMap.FormatInternal(AFormatter: TUBSValue.TFormatter);
@@ -707,6 +740,11 @@ begin
   end;
 end;
 
+procedure TUBSMap.Remove(AKey: string);
+begin
+  Extract(AKey).Free;
+end;
+
 constructor TUBSMap.Create;
 begin
   FMap := TToObjectMap<string, TUBSValue>.Create;
@@ -733,6 +771,11 @@ end;
 function TUBSList.GetItems: IReadonlyList<TUBSValue>;
 begin
   Result := FItems.ReadonlyList;
+end;
+
+function TUBSList.GetCount: Integer;
+begin
+  Result := Items.Count;
 end;
 
 procedure TUBSList.FormatInternal(AFormatter: TUBSValue.TFormatter);
@@ -789,9 +832,19 @@ begin
   FItems.Add(AValue);
 end;
 
-function TUBSList.GetCount: Integer;
+procedure TUBSList.Remove(AValue: TUBSValue);
 begin
-  Result := Items.Count;
+  FItems.Remove(AValue);
+end;
+
+procedure TUBSList.RemoveAt(AIndex: Integer);
+begin
+  FItems.RemoveAt(AIndex);
+end;
+
+function TUBSList.Extract(AIndex: Integer): TUBSValue;
+begin
+  Result := FItems.Extract(AIndex);
 end;
 
 function TUBSList.GetEnumerator: IIterator<TUBSValue>;
@@ -1638,13 +1691,18 @@ begin
   Tag := TUBSTag(AReader.Read7BitEncodedInt);
   if not(Tag in [Low(TUBSTag) .. High(TUBSTag)]) then
     raise EUBSError.Create('Unknown UBS-Tag, newer version or corrupted data.');
-  Result := UBSClasses[Tag].Create;
+  Result := CreateTyped(Tag);
   Result.LoadInternal(AReader);
 end;
 
 constructor TUBSValue.Create;
 begin
   // nothing
+end;
+
+class function TUBSValue.CreateTyped(ATag: TUBSTag): TUBSValue;
+begin
+  Result := UBSClasses[ATag].Create;
 end;
 
 procedure TUBSValue.SaveToFile(const AFilename: string);

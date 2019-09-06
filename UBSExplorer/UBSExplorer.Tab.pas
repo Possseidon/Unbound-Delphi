@@ -25,16 +25,34 @@ type
 
   TUBSTreeNode = class(TTreeNode)
   private
+    FUBSParent: TUBSParent;
     FUBSValue: TUBSValue;
-
+    FName: string;
+    FIndex: Integer;
+    procedure SetName(const Value: string);
+    
   public
-    property UBSValue: TUBSValue read FUBSValue write FUBSValue;
+    procedure Initialize(AParentMap: TUBSMap; AName: string); overload;
+    procedure Initialize(AParentList: TUBSList; AIndex: Integer); overload;
+
+    property UBSParent: TUBSParent read FUBSParent;
+    property UBSValue: TUBSValue read FUBSValue;
+    property Name: string read FName write SetName;
+    property Index: Integer read FIndex;
+
+    function CanRename: Boolean;
+    
+    procedure UpdateDisplay;
+    procedure UpdateChildren;
+
+    class procedure GenerateChildren(ATreeView: TTreeView; AUBSValue: TUBSValue; AParent: TUBSTreeNode = nil);
 
   end;
 
   TfrmTab = class(TFrame)
     tvExplorer: TTreeView;
     procedure tvExplorerCreateNodeClass(Sender: TCustomTreeView; var NodeClass: TTreeNodeClass);
+    procedure tvExplorerEditing(Sender: TObject; Node: TTreeNode; var AllowEdit: Boolean);
   private
     FFilename: string;
     FFileTimestamp: TDateTime;
@@ -44,11 +62,17 @@ type
     FOnFilenameChange: TEvent<TfrmTab>;
     FOnModifiedChange: TEvent<TfrmTab>;
 
-    procedure AddUBSValueToTreeView(AParent: TUBSTreeNode; AUBSValue: TUBSValue);
+    function FindNewName(AMap: TUBSMap): string;
+
     function GetOnFilenameChange: TEvent<TfrmTab>.TAccess;
 
     procedure Modify;
     function GetOnModifiedChange: TEvent<TfrmTab>.TAccess;
+
+    function GetSelectedUBSValue: TUBSValue;
+    function GetSelectedUBSParent: TUBSParent;
+    function GetSelectedValueNode: TUBSTreeNode;
+    function GetSelectedParentNode: TUBSTreeNode;
 
   public
     constructor Create(AOwner: TComponent; AUBSTag: TUBSTag); reintroduce; overload;
@@ -60,6 +84,14 @@ type
     property Modified: Boolean read FModified;
     property Saved: Boolean read FSaved;
 
+    function FindNode(AValue: TUBSValue): TUBSTreeNode;
+
+    property SelectedValueNode: TUBSTreeNode read GetSelectedValueNode;
+    property SelectedParentNode: TUBSTreeNode read GetSelectedParentNode;
+
+    property SelectedUBSValue: TUBSValue read GetSelectedUBSValue;
+    property SelectedUBSParent: TUBSParent read GetSelectedUBSParent;
+
     procedure UpdateTreeView;
 
     function Save: Boolean;
@@ -70,6 +102,10 @@ type
 
     function TryClose: Boolean;
 
+    function CanAddValue: Boolean;
+    procedure AddValue; overload;
+    procedure AddValue(ATag: TUBSTag); overload;
+
     property OnFilenameChange: TEvent<TfrmTab>.TAccess read GetOnFilenameChange;
     property OnModifiedChange: TEvent<TfrmTab>.TAccess read GetOnModifiedChange;
 
@@ -79,62 +115,155 @@ implementation
 
 {$R *.dfm}
 
-{ TfrmTab }
+{ TUBSTreeNode }
 
-procedure TfrmTab.AddUBSValueToTreeView(AParent: TUBSTreeNode; AUBSValue: TUBSValue);
+procedure TUBSTreeNode.Initialize(AParentMap: TUBSMap; AName: string);
+begin
+  FUBSParent := AParentMap;
+  FUBSValue := AParentMap[AName];
+  FName := AName;
+  UpdateDisplay;
+  UpdateChildren;
+end;
+
+procedure TUBSTreeNode.Initialize(AParentList: TUBSList; AIndex: Integer);
+begin
+  FUBSParent := AParentList;
+  FUBSValue := AParentList[AIndex];
+  FIndex := AIndex;
+  UpdateDisplay;
+  UpdateChildren;
+end;
+
+procedure TUBSTreeNode.SetName(const Value: string);
 var
+  Map: TUBSMap;
+begin
+  if Name = Value then
+    Exit;
+  Map := FUBSParent as TUBSMap;
+  Map[Value] := Map.Extract(Name);
+  FName := Value;
+end;
+
+procedure TUBSTreeNode.UpdateDisplay;
+begin
+  if (UBSValue = nil) or (UBSParent = nil) then
+  begin
+    ImageIndex := -1;
+    Text := '<ERROR>';
+    Exit;
+  end;
+
+  ImageIndex := Ord(UBSValue.GetTag);
+  SelectedIndex := ImageIndex;
+  Text := UBSValue.Format(ufInline);
+  case UBSParent.GetTag of
+    utList:
+      Text := Format('[%d]: %s', [Index, Text]);
+    utMap:
+      Text := Format('%s: %s', [Name, Text]);
+  else
+    Text := Format('???: %s', [Text]);
+  end;
+end;
+
+procedure TUBSTreeNode.UpdateChildren;
+begin
+  GenerateChildren(TTreeView(TreeView), UBSValue, Self);
+end;
+
+function TUBSTreeNode.CanRename: Boolean;
+begin
+  Result := UBSParent is TUBSMap;
+end;
+
+class procedure TUBSTreeNode.GenerateChildren(ATreeView: TTreeView; AUBSValue: TUBSValue; AParent: TUBSTreeNode);
+var
+  NewNode: TUBSTreeNode;
   Pair: TPair<string, TUBSValue>;
-  Node: TUBSTreeNode;
   I: Integer;
-  Value: TUBSValue;
 begin
   case AUBSValue.GetTag of
     utMap:
+      for Pair in TUBSMap(AUBSValue).Order do
       begin
-        for Pair in TUBSMap(AUBSValue).Order do
-        begin
-          case Pair.Value.GetTag of
-            utMap, utList:
-              begin
-                Node := tvExplorer.Items.AddChild(AParent,
-                  Format('%s: %s', [Pair.Key, Pair.Value.GetTagName])) as TUBSTreeNode;
-                Node.UBSValue := Pair.Value;
-                AddUBSValueToTreeView(Node, Pair.Value);
-              end
-          else
-            Node := tvExplorer.Items.AddChildObject(AParent,
-              Format('%s: %s', [Pair.Key, Pair.Value.ToString]), Pair.Value) as TUBSTreeNode;
-          end;
-          Node.ImageIndex := Ord(Pair.Value.GetTag);
-          Node.SelectedIndex := Node.ImageIndex;
-        end;
+        NewNode := TTreeView(ATreeView).Items.AddChild(AParent, '') as TUBSTreeNode;
+        NewNode.Initialize(TUBSMap(AUBSValue), Pair.Key);
       end;
     utList:
+      for I := 0 to TUBSList(AUBSValue).Items.MaxIndex do
       begin
-        for I := 0 to TUBSList(AUBSValue).Items.MaxIndex do
-        begin
-          Value := TUBSList(AUBSValue).Items[I];
-          case Value.GetTag of
-            utMap, utList:
-              begin
-                Node := tvExplorer.Items.AddChildObject(AParent,
-                  Format('[%d] %s', [I, Value.GetTagName]), Value) as TUBSTreeNode;
-                Node.UBSValue := Value;
-                AddUBSValueToTreeView(Node, Value);
-              end
-          else
-            Node := tvExplorer.Items.AddChildObject(AParent,
-              Format('[%d] %s', [I, Value.ToString]), Value) as TUBSTreeNode;
-          end;
-          Node.ImageIndex := Ord(Value.GetTag);
-          Node.SelectedIndex := Node.ImageIndex;
-        end;
-      end
-  else
-    Node := tvExplorer.Items.AddChildObject(AParent, AUBSValue.ToString, AUBSValue) as TUBSTreeNode;
-    Node.ImageIndex := Ord(AUBSValue.GetTag);
-    Node.SelectedIndex := Node.ImageIndex;
+        NewNode := TTreeView(ATreeView).Items.AddChild(AParent, '') as TUBSTreeNode;
+        NewNode.Initialize(TUBSList(AUBSValue), I);
+      end;
   end;
+end;
+
+{ TfrmTab }
+
+procedure TfrmTab.tvExplorerCreateNodeClass(Sender: TCustomTreeView; var NodeClass: TTreeNodeClass);
+begin
+  NodeClass := TUBSTreeNode;
+end;
+
+function TfrmTab.GetOnFilenameChange: TEvent<TfrmTab>.TAccess;
+begin
+  Result := FOnFilenameChange.Access;
+end;
+
+procedure TfrmTab.Modify;
+begin
+  FModified := True;
+  FOnModifiedChange.Execute(Self);
+end;
+
+function TfrmTab.GetOnModifiedChange: TEvent<TfrmTab>.TAccess;
+begin
+  Result := FOnModifiedChange.Access;
+end;
+
+function TfrmTab.GetSelectedUBSValue: TUBSValue;
+var
+  SelectedNode: TUBSTreeNode;
+begin
+  SelectedNode := tvExplorer.Selected as TUBSTreeNode;
+  if SelectedNode = nil then
+    Exit(nil);
+  Result := SelectedNode.UBSValue;
+end;
+
+function TfrmTab.GetSelectedUBSParent: TUBSParent;
+var
+  Node: TUBSTreeNode;
+begin
+  Node := SelectedParentNode;
+  if Node = nil then
+  begin
+    if UBSValue is TUBSParent then
+      Exit(TUBSParent(UBSValue));
+    Exit(nil);
+  end;
+  Exit(TUBSParent(Node.UBSValue));
+end;
+
+function TfrmTab.GetSelectedValueNode: TUBSTreeNode;
+begin
+  Result := tvExplorer.Selected as TUBSTreeNode;
+end;
+
+function TfrmTab.GetSelectedParentNode: TUBSTreeNode;
+begin
+  Result := SelectedValueNode;
+  if Result = nil then
+    Exit;
+  if Result.UBSValue is TUBSParent then
+    Exit;
+  if Result.Parent <> nil then
+    Result := Result.Parent as TUBSTreeNode;
+  if Result.UBSValue is TUBSParent then
+    Exit;
+  Result := nil;
 end;
 
 constructor TfrmTab.Create(AOwner: TComponent; AUBSTag: TUBSTag);
@@ -162,12 +291,37 @@ begin
   inherited;
 end;
 
+function TfrmTab.FindNewName(AMap: TUBSMap): string;
+const
+  DefaultName = 'Unnamed';
+var
+  I: Integer;
+begin
+  Result := DefaultName;
+  I := 0;
+  while AMap.Map.ContainsKey(Result) do
+  begin
+    Inc(I);
+    Result := Format('%s%d', [DefaultName, I]);
+  end;
+end;
+
+function TfrmTab.FindNode(AValue: TUBSValue): TUBSTreeNode;
+var
+  Node: TTreeNode;
+begin
+  for Node in tvExplorer.Items do
+    if (Node as TUBSTreeNode).UBSValue = AValue then
+      Exit(TUBSTreeNode(Node));
+  Result := nil;
+end;
+
 procedure TfrmTab.UpdateTreeView;
 begin
   tvExplorer.Items.BeginUpdate;
   try
-    tvExplorer.Items.Clear;
-    AddUBSValueToTreeView(nil, UBSValue);
+    tvExplorer.Items.Clear;                     
+    TUBSTreeNode.GenerateChildren(tvExplorer, UBSValue);
   finally
     tvExplorer.Items.EndUpdate;
   end;
@@ -188,11 +342,11 @@ end;
 function TfrmTab.SaveAs: Boolean;
 begin
   (Parent as TTabSheet).PageControl.ActivePage := (Parent as TTabSheet);
-  dmData.dlgSave.FileName := Filename;
+  dmData.dlgSave.Filename := Filename;
   Result := dmData.dlgSave.Execute;
   if not Result then
     Exit;
-  FFilename := dmData.dlgSave.FileName;
+  FFilename := dmData.dlgSave.Filename;
   FOnFilenameChange.Execute(Self);
   Result := Save;
 end;
@@ -200,22 +354,6 @@ end;
 function TfrmTab.FileChanged: Boolean;
 begin
   Result := not Filename.IsEmpty and (TFile.GetLastWriteTime(Filename) <> FFileTimestamp);
-end;
-
-function TfrmTab.GetOnFilenameChange: TEvent<TfrmTab>.TAccess;
-begin
-  Result := FOnFilenameChange.Access;
-end;
-
-function TfrmTab.GetOnModifiedChange: TEvent<TfrmTab>.TAccess;
-begin
-  Result := FOnModifiedChange.Access;
-end;
-
-procedure TfrmTab.Modify;
-begin
-  FModified := True;
-  FOnModifiedChange.Execute(Self);
 end;
 
 procedure TfrmTab.CheckFileChanged;
@@ -244,9 +382,45 @@ begin
     Parent.Free;
 end;
 
-procedure TfrmTab.tvExplorerCreateNodeClass(Sender: TCustomTreeView; var NodeClass: TTreeNodeClass);
+function TfrmTab.CanAddValue: Boolean;
 begin
-  NodeClass := TUBSTreeNode;
+  Result := SelectedUBSParent <> nil;
+end;
+
+procedure TfrmTab.AddValue;
+begin
+
+end;
+
+procedure TfrmTab.AddValue(ATag: TUBSTag);
+var
+  Node, NewNode: TUBSTreeNode;
+  UBSParent: TUBSParent;
+  NewName: string;
+  NewValue: TUBSValue;
+begin
+  Node := SelectedParentNode;
+  UBSParent := SelectedUBSParent;
+  if UBSParent is TUBSList then
+  begin
+    NewValue := TUBSValue.CreateTyped(ATag);
+    TUBSList(UBSParent).Add(NewValue);
+    NewNode := tvExplorer.Items.AddChild(Node, '...') as TUBSTreeNode;
+    NewNode.Initialize(TUBSList(UBSParent), TUBSList(UBSParent).Items.MaxIndex);
+  end
+  else if UBSParent is TUBSMap then
+  begin
+    NewName := FindNewName(TUBSMap(UBSParent));
+    NewValue := TUBSValue.CreateTyped(ATag);
+    TUBSMap(UBSParent)[NewName] := NewValue;
+    NewNode := tvExplorer.Items.AddChild(Node, NewName) as TUBSTreeNode;
+    NewNode.Initialize(TUBSMap(Node.UBSValue), NewName);
+  end;
+end;
+
+procedure TfrmTab.tvExplorerEditing(Sender: TObject; Node: TTreeNode; var AllowEdit: Boolean);
+begin
+  AllowEdit := (Node as TUBSTreeNode).CanRename;
 end;
 
 end.

@@ -245,6 +245,8 @@ object frmMain: TfrmMain
       Caption = 'Add Map'
       ImageIndex = 1
       ShortCut = 16461
+      OnExecute = actAddMapExecute
+      OnUpdate = actAddMapUpdate
     end
     object actAbout: TAction
       Category = 'Help'
@@ -256,12 +258,16 @@ object frmMain: TfrmMain
       Caption = 'Add List'
       ImageIndex = 2
       ShortCut = 16460
+      OnExecute = actAddListExecute
+      OnUpdate = actAddListUpdate
     end
     object actAddValue: TAction
       Category = 'Edit'
       Caption = 'Add Value...'
       ImageIndex = 7
       ShortCut = 16452
+      OnExecute = actAddValueExecute
+      OnUpdate = actAddValueUpdate
     end
     object actEditValue: TAction
       Category = 'Edit'

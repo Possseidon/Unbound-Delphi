@@ -101,6 +101,12 @@ type
     miSaveAll: TMenuItem;
     actRenameValue: TAction;
     actRenameValue1: TMenuItem;
+    procedure actAddListExecute(Sender: TObject);
+    procedure actAddListUpdate(Sender: TObject);
+    procedure actAddMapExecute(Sender: TObject);
+    procedure actAddMapUpdate(Sender: TObject);
+    procedure actAddValueExecute(Sender: TObject);
+    procedure actAddValueUpdate(Sender: TObject);
     procedure actCloseExecute(Sender: TObject);
     procedure actCloseUpdate(Sender: TObject);
     procedure actDarkThemeExecute(Sender: TObject);
@@ -152,6 +158,36 @@ implementation
 
 uses
   UBSExplorer.EditValueDialog;
+
+procedure TfrmMain.actAddListExecute(Sender: TObject);
+begin
+  ActiveTab.AddValue(utList);
+end;
+
+procedure TfrmMain.actAddListUpdate(Sender: TObject);
+begin
+  actAddList.Enabled := HasTab and ActiveTab.CanAddValue;
+end;
+
+procedure TfrmMain.actAddMapExecute(Sender: TObject);
+begin
+  ActiveTab.AddValue(utMap);
+end;
+
+procedure TfrmMain.actAddMapUpdate(Sender: TObject);
+begin
+  actAddMap.Enabled := HasTab and ActiveTab.CanAddValue;
+end;
+
+procedure TfrmMain.actAddValueExecute(Sender: TObject);
+begin
+  ActiveTab.AddValue;
+end;
+
+procedure TfrmMain.actAddValueUpdate(Sender: TObject);
+begin
+  actAddValue.Enabled := HasTab and ActiveTab.CanAddValue;
+end;
 
 procedure TfrmMain.actCloseExecute(Sender: TObject);
 begin

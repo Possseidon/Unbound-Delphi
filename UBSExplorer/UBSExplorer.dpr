@@ -12,12 +12,10 @@ uses
 
 begin
   ReportMemoryLeaksOnShutdown := True;
-
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TfrmMain, frmMain);
   Application.CreateForm(TdlgEditValue, dlgEditValue);
   Application.CreateForm(TdmData, dmData);
   Application.Run;
-
 end.
